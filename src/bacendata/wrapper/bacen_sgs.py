@@ -19,6 +19,7 @@ from typing import Dict, List, Optional, Tuple, Union
 import httpx
 import pandas as pd
 
+from bacendata.wrapper import cache, catalogo
 from bacendata.wrapper.exceptions import (
     BacenAPIError,
     BacenTimeoutError,
@@ -155,13 +156,26 @@ async def _buscar_serie_periodo(
     fim: date,
 ) -> List[Dict[str, str]]:
     """Busca uma série para um período específico (máx 10 anos)."""
+    param_inicio = inicio.strftime(BACEN_DATE_FORMAT)
+    param_fim = fim.strftime(BACEN_DATE_FORMAT)
+
+    # Tentar cache primeiro
+    dados_cache = cache.obter(codigo, param_inicio, param_fim)
+    if dados_cache is not None:
+        return dados_cache
+
     url = BASE_URL.format(codigo=codigo)
     params = {
         "formato": "json",
-        "dataInicial": inicio.strftime(BACEN_DATE_FORMAT),
-        "dataFinal": fim.strftime(BACEN_DATE_FORMAT),
+        "dataInicial": param_inicio,
+        "dataFinal": param_fim,
     }
-    return await _fetch_com_retry(client, url, params, codigo)
+    dados = await _fetch_com_retry(client, url, params, codigo)
+
+    # Salvar no cache
+    cache.salvar(codigo, param_inicio, param_fim, dados)
+
+    return dados
 
 
 async def _buscar_serie_ultimos(
@@ -326,7 +340,7 @@ def _run_async(coro):  # type: ignore[no-untyped-def]
 
 
 def get(
-    codigo: Union[int, Dict[str, int]],
+    codigo: Union[int, str, Dict[str, int]],
     start: Union[str, date, datetime, None] = None,
     end: Union[str, date, datetime, None] = None,
     last: Optional[int] = None,
@@ -337,8 +351,9 @@ def get(
     dividindo em múltiplas requisições quando necessário.
 
     Args:
-        codigo: Código da série SGS (int) ou dict mapeando nomes para códigos.
-            Ex: 11 para Selic, ou {"Selic": 11, "IPCA": 433}
+        codigo: Código da série SGS (int), nome do catálogo (str),
+            ou dict mapeando nomes para códigos.
+            Ex: 11, "selic", ou {"Selic": 11, "IPCA": 433}
         start: Data inicial. Aceita 'YYYY-MM-DD', 'DD/MM/YYYY', date ou datetime.
             Se omitido, usa 10 anos antes da data final.
         end: Data final. Aceita os mesmos formatos de start.
@@ -357,8 +372,10 @@ def get(
 
     Examples:
         >>> from bacendata import sgs
-        >>> # Série única
+        >>> # Série única (por código)
         >>> selic = sgs.get(11, start="2020-01-01")
+        >>> # Série única (por nome do catálogo)
+        >>> selic = sgs.get("selic", start="2020-01-01")
         >>> # Múltiplas séries
         >>> df = sgs.get({"Selic": 11, "IPCA": 433}, start="2010-01-01")
         >>> # Últimos 12 valores
@@ -367,13 +384,14 @@ def get(
     if isinstance(codigo, dict):
         return _run_async(_buscar_multiplas_series(codigo, inicio=start, fim=end, last=last))
 
+    codigo_int = catalogo.resolver_codigo(codigo)
     inicio = _parse_date(start)
     fim = _parse_date(end)
-    return _run_async(_buscar_serie_completa(codigo, inicio=inicio, fim=fim, last=last))
+    return _run_async(_buscar_serie_completa(codigo_int, inicio=inicio, fim=fim, last=last))
 
 
 async def aget(
-    codigo: Union[int, Dict[str, int]],
+    codigo: Union[int, str, Dict[str, int]],
     start: Union[str, date, datetime, None] = None,
     end: Union[str, date, datetime, None] = None,
     last: Optional[int] = None,
@@ -383,7 +401,8 @@ async def aget(
     Útil quando já se está dentro de um contexto async (FastAPI, etc).
 
     Args:
-        codigo: Código da série SGS (int) ou dict mapeando nomes para códigos.
+        codigo: Código da série SGS (int), nome do catálogo (str),
+            ou dict mapeando nomes para códigos.
         start: Data inicial.
         end: Data final.
         last: Buscar os últimos N valores.
@@ -394,9 +413,10 @@ async def aget(
     if isinstance(codigo, dict):
         return await _buscar_multiplas_series(codigo, inicio=start, fim=end, last=last)
 
+    codigo_int = catalogo.resolver_codigo(codigo)
     inicio = _parse_date(start)
     fim = _parse_date(end)
-    return await _buscar_serie_completa(codigo, inicio=inicio, fim=fim, last=last)
+    return await _buscar_serie_completa(codigo_int, inicio=inicio, fim=fim, last=last)
 
 
 def metadata(codigo: int) -> Dict[str, Union[str, int, None]]:

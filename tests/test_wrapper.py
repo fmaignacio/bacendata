@@ -11,6 +11,7 @@ import pandas as pd
 import pytest
 import respx
 
+from bacendata.wrapper import cache
 from bacendata.wrapper.bacen_sgs import (
     BASE_URL,
     ULTIMOS_URL,
@@ -20,6 +21,7 @@ from bacendata.wrapper.bacen_sgs import (
     get,
     metadata,
 )
+from bacendata.wrapper.catalogo import buscar_por_nome, listar, resolver_codigo
 from bacendata.wrapper.exceptions import (
     BacenAPIError,
     ParametrosInvalidos,
@@ -434,3 +436,174 @@ class TestFormatosData:
         respx.get(url).mock(return_value=httpx.Response(200, json=[]))
         df = get(11, start=date(2024, 1, 1), end=date(2024, 12, 31))
         assert isinstance(df, pd.DataFrame)
+
+
+# ============================================================================
+# Testes do catálogo de séries
+# ============================================================================
+
+
+class TestCatalogo:
+    def test_buscar_por_alias(self) -> None:
+        """Busca série por alias retorna objeto correto."""
+        serie = buscar_por_nome("selic")
+        assert serie is not None
+        assert serie.codigo == 11
+
+    def test_buscar_por_alias_case_insensitive(self) -> None:
+        """Busca é case-insensitive."""
+        serie = buscar_por_nome("IPCA")
+        assert serie is not None
+        assert serie.codigo == 433
+
+    def test_buscar_por_nome_completo(self) -> None:
+        """Busca pelo nome completo da série."""
+        serie = buscar_por_nome("Dólar (compra)")
+        assert serie is not None
+        assert serie.codigo == 1
+
+    def test_buscar_inexistente(self) -> None:
+        """Série inexistente retorna None."""
+        assert buscar_por_nome("serie_que_nao_existe") is None
+
+    def test_listar(self) -> None:
+        """Lista retorna todas as séries ordenadas por código."""
+        series = listar()
+        assert len(series) == 14
+        codigos = [s.codigo for s in series]
+        assert codigos == sorted(codigos)
+
+    def test_resolver_codigo_int(self) -> None:
+        """Resolver com int retorna o próprio int."""
+        assert resolver_codigo(11) == 11
+
+    def test_resolver_codigo_str(self) -> None:
+        """Resolver com string busca no catálogo."""
+        assert resolver_codigo("selic") == 11
+        assert resolver_codigo("ipca") == 433
+        assert resolver_codigo("dolar") == 1
+
+    def test_resolver_codigo_str_inexistente(self) -> None:
+        """Resolver string inexistente levanta ValueError."""
+        with pytest.raises(ValueError):
+            resolver_codigo("serie_falsa")
+
+    def test_resolver_codigo_tipo_invalido(self) -> None:
+        """Resolver com tipo inválido levanta TypeError."""
+        with pytest.raises(TypeError):
+            resolver_codigo(3.14)  # type: ignore[arg-type]
+
+
+class TestGetComNome:
+    @respx.mock
+    def test_get_por_nome(self) -> None:
+        """get() aceita nome do catálogo em vez de código."""
+        url = BASE_URL.format(codigo=11)
+        dados = [{"data": "02/01/2024", "valor": "11.75"}]
+        respx.get(url).mock(return_value=httpx.Response(200, json=dados))
+
+        df = get("selic", start="2024-01-01", end="2024-12-31")
+        assert isinstance(df, pd.DataFrame)
+        assert len(df) == 1
+
+    @respx.mock
+    def test_get_por_alias(self) -> None:
+        """get() aceita alias do catálogo."""
+        url = BASE_URL.format(codigo=1)
+        dados = [{"data": "02/01/2024", "valor": "4.95"}]
+        respx.get(url).mock(return_value=httpx.Response(200, json=dados))
+
+        df = get("dolar", start="2024-01-01", end="2024-12-31")
+        assert len(df) == 1
+
+    def test_get_nome_inexistente(self) -> None:
+        """get() com nome inexistente levanta ValueError."""
+        with pytest.raises(ValueError):
+            get("serie_inventada", start="2024-01-01", end="2024-12-31")
+
+
+# ============================================================================
+# Testes do cache local
+# ============================================================================
+
+
+class TestCache:
+    def setup_method(self) -> None:
+        """Ativa cache com arquivo temporário antes de cada teste."""
+        import tempfile
+
+        self._tmpfile = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
+        cache.ativar(self._tmpfile.name)
+
+    def teardown_method(self) -> None:
+        """Desativa cache e limpa arquivo temporário após cada teste."""
+        cache.desativar()
+        import os
+
+        os.unlink(self._tmpfile.name)
+
+    def test_cache_ativar_desativar(self) -> None:
+        """Cache pode ser ativado e desativado."""
+        assert cache.esta_ativo()
+        cache.desativar()
+        assert not cache.esta_ativo()
+
+    def test_cache_salvar_e_obter(self) -> None:
+        """Dados salvos no cache podem ser recuperados."""
+        dados = [{"data": "01/01/2024", "valor": "11.75"}]
+        cache.salvar(11, "01/01/2024", "31/12/2024", dados)
+
+        resultado = cache.obter(11, "01/01/2024", "31/12/2024")
+        assert resultado == dados
+
+    def test_cache_miss(self) -> None:
+        """Cache miss retorna None."""
+        resultado = cache.obter(11, "01/01/2024", "31/12/2024")
+        assert resultado is None
+
+    def test_cache_expirado(self) -> None:
+        """Dados expirados não são retornados."""
+        dados = [{"data": "01/01/2024", "valor": "11.75"}]
+        cache.salvar(11, "01/01/2024", "31/12/2024", dados, ttl=0)
+
+        import time
+
+        time.sleep(0.1)
+
+        resultado = cache.obter(11, "01/01/2024", "31/12/2024", ttl=0)
+        assert resultado is None
+
+    def test_cache_limpar(self) -> None:
+        """Limpar cache remove todos os dados."""
+        dados = [{"data": "01/01/2024", "valor": "11.75"}]
+        cache.salvar(11, "01/01/2024", "31/12/2024", dados)
+        cache.limpar()
+
+        resultado = cache.obter(11, "01/01/2024", "31/12/2024")
+        assert resultado is None
+
+    def test_cache_desativado_retorna_none(self) -> None:
+        """Com cache desativado, obter retorna None."""
+        dados = [{"data": "01/01/2024", "valor": "11.75"}]
+        cache.salvar(11, "01/01/2024", "31/12/2024", dados)
+        cache.desativar()
+
+        resultado = cache.obter(11, "01/01/2024", "31/12/2024")
+        assert resultado is None
+
+    @respx.mock
+    def test_cache_integrado_com_get(self) -> None:
+        """get() usa cache quando ativado — segunda chamada não faz HTTP."""
+        url = BASE_URL.format(codigo=11)
+        dados = [{"data": "02/01/2024", "valor": "11.75"}]
+        respx.get(url).mock(return_value=httpx.Response(200, json=dados))
+
+        # Primeira chamada: vai à API
+        df1 = get(11, start="2024-01-01", end="2024-12-31")
+        assert len(df1) == 1
+        assert respx.calls.call_count == 1
+
+        # Segunda chamada: vem do cache
+        df2 = get(11, start="2024-01-01", end="2024-12-31")
+        assert len(df2) == 1
+        assert respx.calls.call_count == 1  # Não fez nova requisição
