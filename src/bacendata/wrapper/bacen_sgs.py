@@ -431,11 +431,11 @@ def metadata(codigo: int) -> Dict[str, Union[str, int, None]]:
     Raises:
         SerieNaoEncontrada: Se o código da série não existe.
     """
-    return _run_async(_ametadata(codigo))
+    return _run_async(ametadata(codigo))
 
 
-async def _ametadata(codigo: int) -> Dict[str, Union[str, int, None]]:
-    """Busca metadados de uma série SGS (async)."""
+async def ametadata(codigo: int) -> Dict[str, Union[str, int, None]]:
+    """Versão async de metadata(). Para uso em contextos assíncronos (FastAPI, etc)."""
     metadata_url = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}"
 
     async with httpx.AsyncClient() as client:

@@ -83,7 +83,10 @@ def desativar() -> None:
     """Desativa o cache local."""
     global _ativo, _conn
     if _conn is not None:
-        _conn.close()
+        try:
+            _conn.close()
+        except Exception:
+            pass
         _conn = None
     _ativo = False
     logger.info("Cache local desativado.")

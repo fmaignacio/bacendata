@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "bacendata"
-version = "0.1.0"
+version = "0.2.0"
 description = "Acesso simplificado aos dados do Banco Central do Brasil"
 readme = "README.md"
 license = {text = "MIT"}
@@ -37,6 +37,11 @@ Repository = "https://github.com/fmaignacio/bacendata"
 Issues = "https://github.com/fmaignacio/bacendata/issues"
 
 [project.optional-dependencies]
+api = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.25.0",
+    "pydantic-settings>=2.1.0",
+]
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
@@ -44,6 +49,7 @@ dev = [
     "ruff>=0.1.0",
     "black>=23.0",
     "respx>=0.20",
+    "httpx[http2]>=0.25.0",
 ]
 
 [tool.setuptools.packages.find]
