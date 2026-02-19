@@ -342,7 +342,7 @@ if modo == "Série única":
             )
         )
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     # Tabela e download
     st.subheader("Dados")
@@ -374,7 +374,7 @@ if modo == "Série única":
         df_display.index = df_display.index.strftime("%d/%m/%Y")
         df_display = df_display.sort_index(ascending=False).head(50)
         df_display.columns = [f"Valor ({info.unidade})"]
-        st.dataframe(df_display, use_container_width=True, height=400)
+        st.dataframe(df_display, width="stretch", height=400)
 
     # Info da serie
     with st.expander("Sobre esta série"):
@@ -423,7 +423,7 @@ else:
 
     # Grafico de comparacao
     fig = criar_grafico_comparacao(series_data)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     # Tabela combinada
     st.subheader("Dados comparados")
@@ -456,7 +456,7 @@ else:
     with col_tab:
         df_display = df_combined.copy()
         df_display.index = df_display.index.strftime("%d/%m/%Y")
-        st.dataframe(df_display.head(50), use_container_width=True, height=400)
+        st.dataframe(df_display.head(50), width="stretch", height=400)
 
     # Correlacao
     if len(series_data) >= 2:
@@ -483,7 +483,7 @@ else:
                     height=400,
                     template="plotly_white",
                 )
-                st.plotly_chart(fig_corr, use_container_width=True)
+                st.plotly_chart(fig_corr, width="stretch")
 
                 st.caption(
                     "Correlação de Pearson: 1.0 = correlação perfeita positiva, "
