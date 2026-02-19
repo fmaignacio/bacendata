@@ -60,6 +60,66 @@ CATEGORIAS = {
     "Expectativas (Focus)": [27574, 27575],
 }
 
+# Descrições detalhadas para tooltips e documentação inline
+DESCRICOES_DETALHADAS = {
+    11: (
+        "Taxa Selic diária definida pelo COPOM. Principal instrumento de "
+        "política monetária do Banco Central para controle da inflação."
+    ),
+    12: (
+        "Selic acumulada no mês corrente. Útil para cálculo de "
+        "rendimentos de renda fixa atrelados à Selic."
+    ),
+    433: (
+        "Índice Nacional de Preços ao Consumidor Amplo — principal "
+        "indicador de inflação oficial do Brasil, medido pelo IBGE."
+    ),
+    4390: (
+        "Taxa Selic acumulada no mês expressa em termos anuais. "
+        "Referência para remuneração de títulos públicos."
+    ),
+    1: (
+        "Cotação de compra do dólar americano (PTAX). Média das "
+        "operações no mercado interbancário, divulgada diariamente pelo BACEN."
+    ),
+    21619: (
+        "Cotação de compra do euro (PTAX). Média das operações no "
+        "mercado interbancário, divulgada diariamente pelo BACEN."
+    ),
+    4189: (
+        "Taxa média de juros cobrada nas operações de crédito para "
+        "pessoa física. Indicador do custo do crédito ao consumidor."
+    ),
+    25434: (
+        "Taxa média de juros nas operações de crédito livre total. "
+        "Abrange PF e PJ em modalidades sem direcionamento obrigatório."
+    ),
+    20542: (
+        "Saldo total da carteira de crédito com recursos livres no "
+        "sistema financeiro. Indicador do volume de crédito na economia."
+    ),
+    21112: (
+        "Percentual de operações em atraso acima de 90 dias na carteira "
+        "de crédito de pessoa física. Indicador de risco de crédito PF."
+    ),
+    21082: (
+        "Percentual de operações em atraso acima de 90 dias na carteira "
+        "de crédito de pessoa jurídica. Indicador de risco de crédito PJ."
+    ),
+    7326: (
+        "Reservas internacionais sob o conceito de liquidez. Colchão de "
+        "segurança do país para obrigações externas e estabilidade cambial."
+    ),
+    27574: (
+        "Mediana das expectativas do mercado para o IPCA acumulado nos "
+        "próximos 12 meses. Pesquisa Focus do Banco Central."
+    ),
+    27575: (
+        "Mediana das expectativas do mercado para a taxa Selic no fim "
+        "do ano corrente. Pesquisa Focus do Banco Central."
+    ),
+}
+
 
 # =============================================================================
 # Funcoes auxiliares
@@ -214,16 +274,17 @@ with st.sidebar:
     st.caption("Indicadores do Banco Central do Brasil")
     st.divider()
 
-    # Modo de visualizacao
-    modo = st.radio(
-        "Modo de visualização",
-        ["Série única", "Comparar séries"],
+    # Navegacao principal
+    pagina = st.radio(
+        "Navegação",
+        ["Indicadores", "Comparar séries", "Sobre"],
         index=0,
+        label_visibility="collapsed",
     )
 
     st.divider()
 
-    if modo == "Série única":
+    if pagina == "Indicadores":
         # Selecao por categoria
         categoria = st.selectbox(
             "Categoria",
@@ -241,7 +302,12 @@ with st.sidebar:
         )
         codigo_selecionado = opcoes[serie_selecionada]
 
-    else:
+        # Descrição da série selecionada
+        desc = DESCRICOES_DETALHADAS.get(codigo_selecionado, "")
+        if desc:
+            st.info(desc, icon="ℹ️")
+
+    elif pagina == "Comparar séries":
         # Comparacao: ate 3 series
         st.markdown("**Selecione até 3 séries:**")
         todas_opcoes = {f"{s.nome} ({s.codigo})": s.codigo for s in listar()}
@@ -253,27 +319,29 @@ with st.sidebar:
         )
         codigos_comparar = [todas_opcoes[s] for s in series_comparar]
 
-    st.divider()
+    if pagina in ("Indicadores", "Comparar séries"):
+        st.divider()
 
-    # Seletor de periodo
-    periodo_label = st.select_slider(
-        "Período",
-        options=list(PERIODOS.keys()),
-        value="1 ano",
-    )
-    periodo_dias = PERIODOS[periodo_label]
+        # Seletor de periodo
+        periodo_label = st.select_slider(
+            "Período",
+            options=list(PERIODOS.keys()),
+            value="1 ano",
+        )
+        periodo_dias = PERIODOS[periodo_label]
 
-    st.divider()
+        st.divider()
 
-    # Media movel
-    media_movel = st.checkbox("Média móvel", value=False)
-    if media_movel:
-        janela_mm = st.slider("Janela (dias)", min_value=5, max_value=90, value=30)
+        # Media movel
+        media_movel = st.checkbox("Média móvel", value=False)
+        if media_movel:
+            janela_mm = st.slider("Janela (dias)", min_value=5, max_value=90, value=30)
 
     st.divider()
     st.markdown(
-        "**Dados:** [Banco Central do Brasil — SGS](https://www3.bcb.gov.br/sgspub/)\n\n"
-        "**Wrapper:** `pip install bacendata`\n\n"
+        "**Dados:** [Banco Central — SGS](https://www3.bcb.gov.br/sgspub/)  \n"
+        "**Wrapper:** `pip install bacendata`  \n"
+        "**API REST:** [Documentação](/docs)  \n"
         "**GitHub:** [fmaignacio/bacendata](https://github.com/fmaignacio/bacendata)"
     )
 
@@ -282,13 +350,18 @@ with st.sidebar:
 # Conteudo principal
 # =============================================================================
 
-inicio, fim = calcular_datas(periodo_dias)
-
-if modo == "Série única":
+if pagina == "Indicadores":
     # =========================================================================
     # MODO: Serie unica
     # =========================================================================
+    inicio, fim = calcular_datas(periodo_dias)
     info = CATALOGO[codigo_selecionado]
+
+    st.header(f"{info.nome}", divider="blue")
+    st.caption(
+        f"Código SGS: {info.codigo} · Periodicidade: {info.periodicidade} · "
+        f"Unidade: {info.unidade}"
+    )
 
     # Buscar dados
     with st.spinner(f"Buscando {info.nome}..."):
@@ -306,7 +379,7 @@ if modo == "Série única":
     with col1:
         st.metric(
             label="Último valor",
-            value=formatar_valor(stats["ultimo"], info.unidade) if stats["ultimo"] else "—",
+            value=(formatar_valor(stats["ultimo"], info.unidade) if stats["ultimo"] else "—"),
         )
 
     with col2:
@@ -321,10 +394,10 @@ if modo == "Série única":
         st.metric(label="Registros", value=f"{len(df):,}".replace(",", "."))
 
     with col4:
-        st.metric(
-            label="Período",
-            value=f"{df.index[0].strftime('%d/%m/%Y')} — {df.index[-1].strftime('%d/%m/%Y')}",
+        periodo_str = (
+            f"{df.index[0].strftime('%d/%m/%Y')} a " f"{df.index[-1].strftime('%d/%m/%Y')}"
         )
+        st.metric(label="Período", value=periodo_str)
 
     # Grafico
     fig = criar_grafico_serie(df, info.nome, info.unidade)
@@ -350,26 +423,23 @@ if modo == "Série única":
     col_tabela, col_download = st.columns([3, 1])
 
     with col_download:
-        # Download CSV
         csv = df.to_csv()
         st.download_button(
-            label="Baixar CSV",
+            label="📥 Baixar CSV",
             data=csv,
-            file_name=f"bacendata_{info.nome.lower().replace(' ', '_')}_{periodo_label}.csv",
+            file_name=f"bacendata_{info.codigo}_{periodo_label}.csv",
             mime="text/csv",
         )
 
-        # Download Excel
         excel = df_para_excel(df)
         st.download_button(
-            label="Baixar Excel",
+            label="📥 Baixar Excel",
             data=excel,
-            file_name=f"bacendata_{info.nome.lower().replace(' ', '_')}_{periodo_label}.xlsx",
+            file_name=f"bacendata_{info.codigo}_{periodo_label}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
 
     with col_tabela:
-        # Mostrar ultimos 50 registros (mais recentes primeiro)
         df_display = df.copy()
         df_display.index = df_display.index.strftime("%d/%m/%Y")
         df_display = df_display.sort_index(ascending=False).head(50)
@@ -378,19 +448,26 @@ if modo == "Série única":
 
     # Info da serie
     with st.expander("Sobre esta série"):
+        desc = DESCRICOES_DETALHADAS.get(info.codigo, info.descricao)
+        st.markdown(desc)
         st.markdown(f"""
-        - **Código SGS:** {info.codigo}
-        - **Nome:** {info.nome}
-        - **Descrição:** {info.descricao}
-        - **Periodicidade:** {info.periodicidade}
-        - **Unidade:** {info.unidade}
-        - **Aliases:** {', '.join(info.aliases)}
+- **Código SGS:** {info.codigo}
+- **Nome completo:** {info.descricao}
+- **Periodicidade:** {info.periodicidade}
+- **Unidade:** {info.unidade}
+- **Aliases (wrapper):** `{', '.join(info.aliases)}`
+- **Usar no Python:** `sgs.get({info.codigo})` ou `sgs.get("{info.aliases[0]}")`
         """)
 
-else:
+
+elif pagina == "Comparar séries":
     # =========================================================================
     # MODO: Comparacao de series
     # =========================================================================
+    inicio, fim = calcular_datas(periodo_dias)
+
+    st.header("Comparar séries", divider="blue")
+
     if len(codigos_comparar) < 2:
         st.info("Selecione pelo menos 2 séries na barra lateral para comparar.")
         st.stop()
@@ -417,12 +494,31 @@ else:
         with cols[i]:
             st.metric(
                 label=item["nome"],
-                value=formatar_valor(stats["ultimo"], item["unidade"]) if stats["ultimo"] else "—",
+                value=(
+                    formatar_valor(stats["ultimo"], item["unidade"]) if stats["ultimo"] else "—"
+                ),
                 delta=f"{stats['var_pct']:+.2f}%" if stats["var_pct"] is not None else None,
             )
 
     # Grafico de comparacao
     fig = criar_grafico_comparacao(series_data)
+
+    # Media movel na comparação
+    if media_movel:
+        for i, item in enumerate(series_data):
+            if len(item["df"]) > janela_mm:
+                df_mm = item["df"]["valor"].rolling(window=janela_mm).mean()
+                fig.add_trace(
+                    go.Scatter(
+                        x=item["df"].index,
+                        y=df_mm,
+                        mode="lines",
+                        name=f"{item['nome']} MM{janela_mm}",
+                        line=dict(color=CORES[i % len(CORES)], width=1.5, dash="dash"),
+                        showlegend=True,
+                    )
+                )
+
     st.plotly_chart(fig, width="stretch")
 
     # Tabela combinada
@@ -439,7 +535,7 @@ else:
     with col_dl:
         csv = df_combined.to_csv()
         st.download_button(
-            label="Baixar CSV",
+            label="📥 Baixar CSV",
             data=csv,
             file_name=f"bacendata_comparacao_{periodo_label}.csv",
             mime="text/csv",
@@ -447,7 +543,7 @@ else:
 
         excel = df_para_excel(df_combined)
         st.download_button(
-            label="Baixar Excel",
+            label="📥 Baixar Excel",
             data=excel,
             file_name=f"bacendata_comparacao_{periodo_label}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -460,7 +556,7 @@ else:
 
     # Correlacao
     if len(series_data) >= 2:
-        with st.expander("Correlação entre séries"):
+        with st.expander("Correlação entre séries", expanded=True):
             df_corr = df_combined.dropna()
             if len(df_corr) > 10:
                 corr = df_corr.corr()
@@ -479,15 +575,139 @@ else:
                     )
                 )
                 fig_corr.update_layout(
-                    title="Matriz de Correlação",
+                    title="Matriz de Correlação de Pearson",
                     height=400,
                     template="plotly_white",
                 )
                 st.plotly_chart(fig_corr, width="stretch")
 
                 st.caption(
-                    "Correlação de Pearson: 1.0 = correlação perfeita positiva, "
-                    "-1.0 = correlação perfeita negativa, 0 = sem correlação."
+                    "Correlação de Pearson: valores próximos de 1.0 indicam que as séries "
+                    "se movem na mesma direção; próximos de -1.0 indicam direções opostas; "
+                    "próximos de 0 indicam ausência de relação linear."
                 )
             else:
                 st.info("Dados insuficientes para calcular correlação neste período.")
+
+
+elif pagina == "Sobre":
+    # =========================================================================
+    # PAGINA: Sobre o projeto
+    # =========================================================================
+    st.header("Sobre o BacenData", divider="blue")
+
+    st.markdown("""
+O **BacenData** é uma plataforma open source que simplifica o acesso a dados
+públicos do Banco Central do Brasil. Oferecemos um wrapper Python, uma API REST
+e este dashboard interativo.
+    """)
+
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        st.subheader("O problema")
+        st.markdown("""
+Em março de 2025, o Banco Central impôs novas limitações à API SGS:
+
+- Consultas limitadas a **10 anos** por requisição
+- **Filtro de datas obrigatório** (antes era opcional)
+- Portal de dados com UX deficiente
+- Sem dashboards prontos para análise rápida
+
+O BacenData resolve isso com **paginação automática** — consulte qualquer
+período, de qualquer tamanho, em uma única chamada.
+        """)
+
+    with col_right:
+        st.subheader("A solução")
+        st.markdown("""
+- **Wrapper Python** — `pip install bacendata` — consulte séries
+  do BACEN em 1 linha de código
+- **API REST** — endpoints JSON com autenticação, rate limiting
+  e documentação automática (OpenAPI/Swagger)
+- **Dashboard** — este painel interativo com gráficos, download
+  de dados e comparação de séries
+- **Paginação automática** — consultas de qualquer período são
+  divididas automaticamente em chunks de 10 anos
+        """)
+
+    st.divider()
+
+    st.subheader("Como usar o wrapper Python")
+    st.code(
+        """# Instalar
+pip install bacendata
+
+# Importar
+from bacendata import sgs
+
+# Série única (por código ou nome)
+selic = sgs.get(11, start="2020-01-01")
+selic = sgs.get("selic", start="2020-01-01")
+
+# Últimos N valores
+ipca = sgs.get("ipca", last=12)
+
+# Múltiplas séries de uma vez
+df = sgs.get({"Selic": 11, "IPCA": 433}, start="2015-01-01")
+
+# Período longo (paginação automática > 10 anos)
+dolar = sgs.get("dolar", start="1990-01-01")
+
+# Metadados
+meta = sgs.metadata(11)
+""",
+        language="python",
+    )
+
+    st.divider()
+
+    st.subheader("Séries disponíveis")
+    st.markdown(
+        "O catálogo inclui as séries mais demandadas do mercado financeiro. "
+        "Você também pode consultar qualquer série SGS pelo código numérico."
+    )
+
+    # Tabela de séries do catálogo
+    dados_catalogo = []
+    for serie in listar():
+        dados_catalogo.append(
+            {
+                "Código": serie.codigo,
+                "Nome": serie.nome,
+                "Periodicidade": serie.periodicidade,
+                "Unidade": serie.unidade,
+                "Aliases": ", ".join(serie.aliases),
+            }
+        )
+    df_cat = pd.DataFrame(dados_catalogo)
+    st.dataframe(df_cat, width="stretch", hide_index=True)
+
+    st.divider()
+
+    st.subheader("Links")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown("""
+**Wrapper Python**
+- [PyPI](https://pypi.org/project/bacendata/)
+- `pip install bacendata`
+        """)
+    with col2:
+        st.markdown("""
+**API REST**
+- Rode localmente: `uvicorn bacendata.api.app:create_app --factory`
+- Docs: `/docs` (Swagger UI)
+        """)
+    with col3:
+        st.markdown("""
+**Código fonte**
+- [GitHub](https://github.com/fmaignacio/bacendata)
+- Licença MIT
+        """)
+
+    st.divider()
+    st.caption(
+        "BacenData — Dados abertos do Banco Central do Brasil, simplificados. "
+        "Desenvolvido com Python, FastAPI e Streamlit."
+    )
