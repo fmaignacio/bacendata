@@ -9,7 +9,7 @@ Em produção, serão armazenadas no PostgreSQL.
 """
 
 import logging
-from typing import Optional, Tuple
+from typing import Dict, Optional, Tuple
 
 from fastapi import Header, HTTPException
 
@@ -24,7 +24,7 @@ PLANOS = {
 }
 
 
-def _carregar_api_keys() -> dict[str, str]:
+def _carregar_api_keys() -> Dict[str, str]:
     """Carrega API keys da configuração.
 
     Formato: "chave1:plano,chave2:plano"

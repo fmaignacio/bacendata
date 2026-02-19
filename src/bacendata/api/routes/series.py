@@ -6,7 +6,7 @@ Endpoints da API para consulta de séries temporais do BACEN SGS.
 """
 
 import logging
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -37,7 +37,7 @@ logger = logging.getLogger("bacendata")
 router = APIRouter(prefix="/api/v1", tags=["Séries Temporais"])
 
 
-def _df_para_valores(df) -> list[SerieValor]:  # type: ignore[type-arg]
+def _df_para_valores(df) -> List[SerieValor]:  # type: ignore[type-arg]
     """Converte DataFrame para lista de SerieValor."""
     valores = []
     for idx, row in df.iterrows():
