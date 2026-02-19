@@ -49,6 +49,7 @@ sgs.get("selic")          # Taxa Selic diaria (codigo 11)
 sgs.get("ipca")           # IPCA mensal (codigo 433)
 sgs.get("dolar")          # Dolar PTAX compra (codigo 1)
 sgs.get("euro")           # Euro compra PTAX (codigo 21619)
+sgs.get("euro")           # Euro compra (codigo 10813)
 sgs.get("focus_ipca")     # Expectativa IPCA 12m (codigo 27574)
 sgs.get("focus_selic")    # Expectativa Selic (codigo 27575)
 sgs.get("inadimplencia_pf")  # Inadimplencia PF (codigo 21112)
@@ -124,6 +125,7 @@ asyncio.run(main())
 | 4390 | Selic acumulada anualizada | Mensal | `selic_anual`, `selic_anualizada` |
 | 7326 | Reservas Internacionais | Diaria | `reservas` |
 | 21619 | Euro (compra) PTAX | Diaria | `euro`, `eur` |
+| 10813 | Euro (compra) | Diaria | `euro`, `eur` |
 | 20542 | Saldo Credito Livre | Mensal | `saldo_credito`, `carteira_credito` |
 | 21082 | Inadimplencia PJ | Mensal | `inadimplencia_pj`, `default_pj` |
 | 21112 | Inadimplencia PF | Mensal | `inadimplencia_pf`, `default_pf` |

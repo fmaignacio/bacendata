@@ -534,6 +534,7 @@ As 14 series abaixo estao pre-configuradas no catalogo e podem ser acessadas por
 |--------|------|---------|---------|---------|-----------|
 | 1 | Dolar (compra) | `dolar`, `usd`, `ptax`, `cambio` | Diaria | R$/US$ | Taxa PTAX de compra do dolar |
 | 21619 | Euro (compra) PTAX | `euro`, `eur` | Diaria | R$/EUR | Taxa PTAX de compra do euro |
+| 10813 | Euro (compra) | `euro`, `eur` | Diaria | R$/EUR | Taxa de compra do euro |
 
 ### Credito
 
