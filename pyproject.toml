@@ -41,6 +41,11 @@ api = [
     "uvicorn[standard]>=0.25.0",
     "pydantic-settings>=2.1.0",
 ]
+dashboard = [
+    "streamlit>=1.30.0",
+    "plotly>=5.18.0",
+    "openpyxl>=3.1.0",
+]
 dev = [
     "pytest>=7.0",
     "pytest-asyncio>=0.21",
