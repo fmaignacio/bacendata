@@ -13,3 +13,6 @@ venv/
 htmlcov/
 .pytest_cache/
 .ruff_cache/
+BACENDATA_ESPECIFICACAO.md
+CLAUDE.md
+README.md
