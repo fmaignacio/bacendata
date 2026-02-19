@@ -230,7 +230,12 @@ async def _buscar_serie_completa(
 
         async def fetch_com_semaforo(ini: date, fi: date) -> List[Dict[str, str]]:
             async with semaforo:
-                return await _buscar_serie_periodo(client, codigo, ini, fi)
+                try:
+                    return await _buscar_serie_periodo(client, codigo, ini, fi)
+                except (SerieNaoEncontrada, BacenAPIError):
+                    # Intervalo pode não ter dados (série começou depois deste período)
+                    logger.debug("Sem dados para série %d no período %s a %s", codigo, ini, fi)
+                    return []
 
         tarefas = [fetch_com_semaforo(ini, fi) for ini, fi in intervalos]
         resultados = await asyncio.gather(*tarefas)
@@ -239,6 +244,9 @@ async def _buscar_serie_completa(
         todos_dados: List[Dict[str, str]] = []
         for resultado in resultados:
             todos_dados.extend(resultado)
+
+        if not todos_dados:
+            raise SerieNaoEncontrada(codigo)
 
         return _dados_para_dataframe(todos_dados, codigo)
 

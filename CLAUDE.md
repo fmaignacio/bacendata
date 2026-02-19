@@ -146,7 +146,7 @@ Estas são as séries mais demandadas e devem estar no cache desde o dia 1:
 | 433 | IPCA (variação mensal) | Mensal |
 | 4390 | Taxa Selic acumulada no mês anualizada | Mensal |
 | 1 | Taxa de câmbio - Dólar (compra) | Diária |
-| 10813 | Taxa de câmbio - Euro (compra) | Diária |
+| 21619 | Taxa de câmbio - Euro (compra) - PTAX | Diária |
 | 4189 | Taxa média de juros - Pessoa Física | Mensal |
 | 25434 | Taxa média de juros - Crédito Livre Total | Mensal |
 | 20542 | Saldo carteira crédito recursos livres - Total | Mensal |

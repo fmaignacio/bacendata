@@ -54,7 +54,7 @@ PERIODOS = {
 CATEGORIAS = {
     "Taxas de Juros": [11, 12, 4390, 4189, 25434],
     "Inflação": [433],
-    "Câmbio": [1, 10813],
+    "Câmbio": [1, 21619],
     "Crédito": [20542, 21112, 21082],
     "Setor Externo": [7326],
     "Expectativas (Focus)": [27574, 27575],
