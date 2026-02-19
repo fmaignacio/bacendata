@@ -13,3 +13,6 @@ venv/
 htmlcov/
 .pytest_cache/
 .ruff_cache/
+docs/PLANO_NEGOCIO.md
+BACENDATA_ESPECIFICACAO.md
+CLAUDE.md
