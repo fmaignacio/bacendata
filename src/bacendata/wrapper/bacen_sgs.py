@@ -236,7 +236,6 @@ async def _buscar_serie_completa(
                     # Intervalo pode não ter dados (série começou depois deste período)
                     logger.debug("Sem dados para série %d no período %s a %s", codigo, ini, fi)
                     return []
-                return await _buscar_serie_periodo(client, codigo, ini, fi)
 
         tarefas = [fetch_com_semaforo(ini, fi) for ini, fi in intervalos]
         resultados = await asyncio.gather(*tarefas)

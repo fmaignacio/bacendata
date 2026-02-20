@@ -81,10 +81,6 @@ CATALOGO: Dict[int, Serie] = {
         codigo=21619,
         nome="Euro (compra)",
         descricao="Taxa de câmbio - Livre - Euro (compra) - PTAX",
-    10813: Serie(
-        codigo=10813,
-        nome="Euro (compra)",
-        descricao="Taxa de câmbio - Euro (compra)",
         periodicidade="diária",
         unidade="R$/EUR",
         aliases=["euro", "eur"],
