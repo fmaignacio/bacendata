@@ -25,6 +25,7 @@ Se você trabalha com dados econômicos no Brasil, dá uma olhada. Feedback é b
 
 GitHub: github.com/fmaignacio/bacendata
 Dashboard: bacendata.streamlit.app
+API Docs: bacendata-production.up.railway.app/docs
 Site: bacendata.com
 
 #OpenSource #Python #FinTech #BancoCentral #DataScience #Economia
@@ -53,5 +54,6 @@ Stack:
 - Streamlit + Plotly para o dashboard
 
 GitHub: github.com/fmaignacio/bacendata
+API ao vivo: bacendata-production.up.railway.app/docs
 
 #Python #AsyncIO #FastAPI #DataEngineering #FinTech

@@ -40,6 +40,7 @@ ipca = sgs.get("ipca", last=12)
 - GitHub: https://github.com/fmaignacio/bacendata
 - PyPI: https://pypi.org/project/bacendata/
 - Dashboard: https://bacendata.streamlit.app
+- API Docs: https://bacendata-production.up.railway.app/docs
 - Site: https://bacendata.com
 
 Aceito feedback e PRs. O que acham?
@@ -109,5 +110,6 @@ ipca = sgs.get("ipca", last=12)
 - GitHub: https://github.com/fmaignacio/bacendata
 - PyPI: https://pypi.org/project/bacendata/
 - Dashboard: https://bacendata.streamlit.app
+- Live API Docs: https://bacendata-production.up.railway.app/docs
 
 Feedback welcome!

@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     bacen_max_concurrent: int = 5
     bacen_timeout: int = 30
 
+    # Stripe (webhook para gerar API keys após pagamento)
+    stripe_webhook_secret: Optional[str] = None
+
     # Cache
     cache_ativo: bool = True
 

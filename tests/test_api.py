@@ -376,3 +376,87 @@ class TestErros:
 
         response = client.get("/api/v1/series/11?start=2024-01-01&end=2024-12-31")
         assert response.status_code == 502
+
+
+# ============================================================================
+# Testes do Webhook Stripe
+# ============================================================================
+
+
+class TestWebhookStripe:
+    def _checkout_event(self, email="user@example.com", price_id="price_1T2jtH2cO5c0PQGeWxzZVHZb"):
+        """Helper: cria evento checkout.session.completed do Stripe."""
+        return {
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "id": "cs_test_123",
+                    "customer_email": email,
+                    "line_items": {
+                        "data": [{"price": {"id": price_id}}]
+                    },
+                    "metadata": {},
+                }
+            },
+        }
+
+    def test_webhook_checkout_gera_api_key(self, client: TestClient, tmp_path) -> None:
+        """Webhook de checkout gera API key e retorna."""
+        from bacendata.api.routes import webhook
+
+        webhook.KEYS_FILE = tmp_path / "api_keys.json"
+
+        event = self._checkout_event()
+        response = client.post("/webhook/stripe", json=event)
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["status"] == "ok"
+        assert data["plano"] == "pro"
+        assert data["email"] == "user@example.com"
+        assert data["api_key"].startswith("bcd_")
+        assert len(data["api_key"]) == 52  # "bcd_" + 48 hex chars
+
+    def test_webhook_enterprise(self, client: TestClient, tmp_path) -> None:
+        """Webhook com price enterprise retorna plano enterprise."""
+        from bacendata.api.routes import webhook
+
+        webhook.KEYS_FILE = tmp_path / "api_keys.json"
+
+        event = self._checkout_event(price_id="price_1T2ju62cO5c0PQGeKXGVEFER")
+        response = client.post("/webhook/stripe", json=event)
+        assert response.status_code == 200
+        assert response.json()["plano"] == "enterprise"
+
+    def test_webhook_persiste_key(self, client: TestClient, tmp_path) -> None:
+        """API key é salva no arquivo JSON."""
+        import json
+        from bacendata.api.routes import webhook
+
+        webhook.KEYS_FILE = tmp_path / "api_keys.json"
+
+        event = self._checkout_event(email="teste@bacendata.com")
+        response = client.post("/webhook/stripe", json=event)
+        api_key = response.json()["api_key"]
+
+        # Verificar arquivo
+        keys = json.loads(webhook.KEYS_FILE.read_text())
+        assert api_key in keys
+        assert keys[api_key]["plano"] == "pro"
+        assert keys[api_key]["email"] == "teste@bacendata.com"
+
+    def test_webhook_ignora_outros_eventos(self, client: TestClient) -> None:
+        """Eventos que não são checkout são ignorados."""
+        event = {"type": "payment_intent.succeeded", "data": {"object": {}}}
+        response = client.post("/webhook/stripe", json=event)
+        assert response.status_code == 200
+        assert response.json()["status"] == "ignored"
+
+    def test_webhook_payload_invalido(self, client: TestClient) -> None:
+        """Payload inválido retorna 400."""
+        response = client.post(
+            "/webhook/stripe",
+            content=b"not json",
+            headers={"content-type": "application/json"},
+        )
+        assert response.status_code == 400
