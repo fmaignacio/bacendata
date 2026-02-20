@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BacenData — Dados do Banco Central, simplificados</title>
+    <meta name="description" content="Acesse dados do Banco Central do Brasil com facilidade. Wrapper Python, API REST e dashboard interativo para Selic, IPCA, câmbio e mais.">
+    <meta name="keywords" content="BACEN, Banco Central, API, Selic, IPCA, câmbio, dados econômicos, Python, SGS">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="BacenData — Dados do Banco Central, simplificados">
+    <meta property="og:description" content="Wrapper Python, API REST e dashboard para indicadores do Banco Central do Brasil.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bacendata.com">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        /* ============================================================
+           Reset & Base
+           ============================================================ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --blue-600: #2563eb;
+            --blue-700: #1d4ed8;
+            --blue-50: #eff6ff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --green-500: #22c55e;
+            --green-600: #16a34a;
+            --green-50: #f0fdf4;
+            --amber-500: #f59e0b;
+            --amber-50: #fffbeb;
+            --red-500: #ef4444;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--gray-800);
+            line-height: 1.6;
+            background: #fff;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { color: var(--blue-600); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        code, pre {
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+        }
+
+        .container {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* ============================================================
+           Navigation
+           ============================================================ */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .nav-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+
+        .nav-logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .nav-logo span { color: var(--blue-600); }
+
+        .nav-links { display: flex; align-items: center; gap: 32px; }
+        .nav-links a {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--gray-600);
+            transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--gray-900); text-decoration: none; }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--blue-600);
+            color: #fff;
+        }
+        .btn-primary:hover { background: var(--blue-700); text-decoration: none; }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--gray-700);
+            border: 1px solid var(--gray-200);
+        }
+        .btn-outline:hover { background: var(--gray-50); text-decoration: none; }
+
+        /* ============================================================
+           Hero
+           ============================================================ */
+        .hero {
+            padding: 80px 0 60px;
+            text-align: center;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            background: var(--blue-50);
+            color: var(--blue-600);
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 800;
+            line-height: 1.15;
+            color: var(--gray-900);
+            max-width: 720px;
+            margin: 0 auto 20px;
+        }
+
+        .hero h1 span { color: var(--blue-600); }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: var(--gray-500);
+            max-width: 560px;
+            margin: 0 auto 36px;
+        }
+
+        .hero-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+        .hero-code {
+            margin: 48px auto 0;
+            max-width: 540px;
+            background: var(--gray-900);
+            border-radius: 12px;
+            padding: 24px 28px;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-code::before {
+            content: 'Python';
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            font-size: 0.7rem;
+            color: var(--gray-400);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hero-code pre {
+            color: #e5e7eb;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            overflow-x: auto;
+        }
+
+        .hero-code .comment { color: var(--gray-500); }
+        .hero-code .keyword { color: #c084fc; }
+        .hero-code .string { color: #86efac; }
+        .hero-code .func { color: #93c5fd; }
+
+        /* ============================================================
+           Features
+           ============================================================ */
+        .features { padding: 80px 0; }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .section-title h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 12px;
+        }
+
+        .section-title p {
+            font-size: 1.05rem;
+            color: var(--gray-500);
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .feature-card {
+            padding: 28px;
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            transition: box-shadow 0.2s;
+        }
+
+        .feature-card:hover {
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        }
+
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-size: 1.4rem;
+            margin-bottom: 16px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--gray-900);
+        }
+
+        .feature-card p {
+            font-size: 0.9rem;
+            color: var(--gray-500);
+            line-height: 1.6;
+        }
+
+        .icon-blue { background: var(--blue-50); }
+        .icon-green { background: var(--green-50); }
+        .icon-amber { background: var(--amber-50); }
+
+        /* ============================================================
+           Series showcase
+           ============================================================ */
+        .series { padding: 80px 0; background: var(--gray-50); }
+
+        .series-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 16px;
+        }
+
+        .series-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid var(--gray-200);
+        }
+
+        .series-card .serie-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+
+        .series-card .serie-code {
+            font-size: 0.8rem;
+            color: var(--gray-400);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .series-card .serie-meta {
+            font-size: 0.82rem;
+            color: var(--gray-500);
+            margin-top: 8px;
+        }
+
+        /* ============================================================
+           Pricing
+           ============================================================ */
+        .pricing { padding: 80px 0; }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            padding: 32px;
+            border: 1px solid var(--gray-200);
+            border-radius: 16px;
+            text-align: center;
+            position: relative;
+        }
+
+        .pricing-card.popular {
+            border: 2px solid var(--blue-600);
+            box-shadow: 0 4px 24px rgba(37, 99, 235, 0.12);
+        }
+
+        .pricing-badge {
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 4px 16px;
+            background: var(--blue-600);
+            color: #fff;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .pricing-card h3 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 8px;
+        }
+
+        .pricing-price {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--gray-900);
+            margin: 16px 0 4px;
+        }
+
+        .pricing-price span {
+            font-size: 1rem;
+            font-weight: 400;
+            color: var(--gray-400);
+        }
+
+        .pricing-desc {
+            font-size: 0.85rem;
+            color: var(--gray-500);
+            margin-bottom: 24px;
+        }
+
+        .pricing-features {
+            list-style: none;
+            text-align: left;
+            margin-bottom: 28px;
+        }
+
+        .pricing-features li {
+            padding: 6px 0;
+            font-size: 0.88rem;
+            color: var(--gray-600);
+        }
+
+        .pricing-features li::before {
+            content: '✓ ';
+            color: var(--green-500);
+            font-weight: 700;
+        }
+
+        .pricing-card .btn { width: 100%; justify-content: center; }
+
+        /* ============================================================
+           CTA / Newsletter
+           ============================================================ */
+        .cta {
+            padding: 80px 0;
+            background: var(--gray-900);
+            color: #fff;
+            text-align: center;
+        }
+
+        .cta h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .cta p {
+            color: var(--gray-400);
+            font-size: 1.05rem;
+            max-width: 480px;
+            margin: 0 auto 32px;
+        }
+
+        .cta-form {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            max-width: 440px;
+            margin: 0 auto;
+        }
+
+        .cta-form input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--gray-700);
+            background: var(--gray-800);
+            color: #fff;
+            font-size: 0.9rem;
+            font-family: inherit;
+        }
+
+        .cta-form input::placeholder { color: var(--gray-500); }
+        .cta-form input:focus { outline: 2px solid var(--blue-600); }
+
+        /* ============================================================
+           Footer
+           ============================================================ */
+        footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--gray-200);
+            text-align: center;
+            color: var(--gray-400);
+            font-size: 0.85rem;
+        }
+
+        footer a { color: var(--gray-500); }
+
+        .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 12px; }
+
+        /* ============================================================
+           Responsive
+           ============================================================ */
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.2rem; }
+            .hero p { font-size: 1rem; }
+            .features-grid { grid-template-columns: 1fr; }
+            .pricing-grid { grid-template-columns: 1fr; max-width: 400px; }
+            .nav-links { gap: 16px; }
+            .nav-links a.hide-mobile { display: none; }
+            .cta-form { flex-direction: column; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="container nav-inner">
+            <a href="/" class="nav-logo">📊 Bacen<span>Data</span></a>
+            <div class="nav-links">
+                <a href="#features" class="hide-mobile">Funcionalidades</a>
+                <a href="#series" class="hide-mobile">Indicadores</a>
+                <a href="#pricing">Planos</a>
+                <a href="https://bacendata.streamlit.app" target="_blank">Dashboard</a>
+                <a href="https://github.com/fmaignacio/bacendata" target="_blank" class="btn btn-outline">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="container">
+            <span class="hero-badge">Open Source &middot; PyPI &middot; API REST</span>
+            <h1>Dados do Banco Central, <span>simplificados</span></h1>
+            <p>
+                Selic, IPCA, câmbio, crédito e mais &mdash; em 1 linha de Python.
+                Sem limitações de período, com paginação automática.
+            </p>
+            <div class="hero-buttons">
+                <a href="#pricing" class="btn btn-primary">Ver planos</a>
+                <a href="https://bacendata.streamlit.app" class="btn btn-outline" target="_blank">Abrir dashboard</a>
+            </div>
+            <div class="hero-code">
+                <pre><span class="keyword">from</span> bacendata <span class="keyword">import</span> sgs
+
+<span class="comment"># Selic dos últimos 20 anos (paginação automática)</span>
+selic = sgs.<span class="func">get</span>(<span class="string">"selic"</span>, start=<span class="string">"2005-01-01"</span>)
+
+<span class="comment"># Múltiplas séries de uma vez</span>
+df = sgs.<span class="func">get</span>({<span class="string">"Selic"</span>: 11, <span class="string">"IPCA"</span>: 433, <span class="string">"Dólar"</span>: 1})
+
+<span class="comment"># Últimos 12 valores do IPCA</span>
+ipca = sgs.<span class="func">get</span>(<span class="string">"ipca"</span>, last=12)</pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-title">
+                <h2>Tudo que você precisa para consumir dados do BACEN</h2>
+                <p>A API SGS ficou limitada em 2025. O BacenData resolve isso.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon icon-blue">&#x1F4E6;</div>
+                    <h3>Wrapper Python</h3>
+                    <p><code>pip install bacendata</code> &mdash; consulte qualquer série do SGS em 1 linha. Retorna pandas DataFrame pronto para análise.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon icon-green">&#x26A1;</div>
+                    <h3>Paginação automática</h3>
+                    <p>A API do BACEN limita consultas a 10 anos. O BacenData divide e combina automaticamente &mdash; consulte qualquer período.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon icon-amber">&#x1F310;</div>
+                    <h3>API REST</h3>
+                    <p>Endpoints JSON com autenticação, rate limiting e documentação OpenAPI automática. Integre com qualquer linguagem.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon icon-blue">&#x1F4CA;</div>
+                    <h3>Dashboard interativo</h3>
+                    <p>Gráficos Plotly, comparação de séries, correlação, média móvel e download CSV/Excel. Pronto para usar.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon icon-green">&#x1F504;</div>
+                    <h3>Cache inteligente</h3>
+                    <p>Cache local SQLite com TTL por periodicidade. Séries diárias: 1h. Mensais: 24h. Economize chamadas à API do BACEN.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon icon-amber">&#x1F4D6;</div>
+                    <h3>14 séries no catálogo</h3>
+                    <p>Selic, IPCA, câmbio, crédito, inadimplência, reservas e Focus. Busque por nome: <code>sgs.get("selic")</code></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Series -->
+    <section class="series" id="series">
+        <div class="container">
+            <div class="section-title">
+                <h2>Indicadores disponíveis</h2>
+                <p>As séries mais demandadas do mercado financeiro brasileiro, prontas para uso.</p>
+            </div>
+            <div class="series-grid">
+                <div class="series-card">
+                    <div class="serie-name">Selic diária</div>
+                    <div class="serie-code">sgs.get("selic")</div>
+                    <div class="serie-meta">Diária &middot; % a.a. &middot; Cód. 11</div>
+                </div>
+                <div class="series-card">
+                    <div class="serie-name">IPCA</div>
+                    <div class="serie-code">sgs.get("ipca")</div>
+                    <div class="serie-meta">Mensal &middot; % a.m. &middot; Cód. 433</div>
+                </div>
+                <div class="series-card">
+                    <div class="serie-name">Dólar (PTAX)</div>
+                    <div class="serie-code">sgs.get("dolar")</div>
+                    <div class="serie-meta">Diária &middot; R$/US$ &middot; Cód. 1</div>
+                </div>
+                <div class="series-card">
+                    <div class="serie-name">Euro (PTAX)</div>
+                    <div class="serie-code">sgs.get("euro")</div>
+                    <div class="serie-meta">Diária &middot; R$/EUR &middot; Cód. 21619</div>
+                </div>
+                <div class="series-card">
+                    <div class="serie-name">Selic anualizada</div>
+                    <div class="serie-code">sgs.get("selic_anual")</div>
+                    <div class="serie-meta">Mensal &middot; % a.a. &middot; Cód. 4390</div>
+                </div>
+                <div class="series-card">
+                    <div class="serie-name">Juros PF</div>
+                    <div class="serie-code">sgs.get("juros_pf")</div>
+                    <div class="serie-meta">Mensal &middot; % a.a. &middot; Cód. 4189</div>
+                </div>
+                <div class="series-card">
+                    <div class="serie-name">Inadimplência PF</div>
+                    <div class="serie-code">sgs.get("inadimplencia_pf")</div>
+                    <div class="serie-meta">Mensal &middot; % &middot; Cód. 21112</div>
+                </div>
+                <div class="series-card">
+                    <div class="serie-name">Inadimplência PJ</div>
+                    <div class="serie-code">sgs.get("inadimplencia_pj")</div>
+                    <div class="serie-meta">Mensal &middot; % &middot; Cód. 21082</div>
+                </div>
+                <div class="series-card">
+                    <div class="serie-name">Reservas internacionais</div>
+                    <div class="serie-code">sgs.get("reservas")</div>
+                    <div class="serie-meta">Diária &middot; US$ mi &middot; Cód. 7326</div>
+                </div>
+                <div class="series-card">
+                    <div class="serie-name">Expectativa IPCA (Focus)</div>
+                    <div class="serie-code">sgs.get("focus_ipca")</div>
+                    <div class="serie-meta">Semanal &middot; % a.a. &middot; Cód. 27574</div>
+                </div>
+                <div class="series-card">
+                    <div class="serie-name">Expectativa Selic (Focus)</div>
+                    <div class="serie-code">sgs.get("focus_selic")</div>
+                    <div class="serie-meta">Semanal &middot; % a.a. &middot; Cód. 27575</div>
+                </div>
+                <div class="series-card">
+                    <div class="serie-name">Saldo Crédito Livre</div>
+                    <div class="serie-code">sgs.get("saldo_credito")</div>
+                    <div class="serie-meta">Mensal &middot; R$ mi &middot; Cód. 20542</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-title">
+                <h2>Planos</h2>
+                <p>Comece grátis. Escale conforme a demanda.</p>
+            </div>
+            <div class="pricing-grid">
+                <!-- Free -->
+                <div class="pricing-card">
+                    <h3>Free</h3>
+                    <div class="pricing-price">R$ 0</div>
+                    <div class="pricing-desc">Para experimentar e projetos pessoais</div>
+                    <ul class="pricing-features">
+                        <li>100 requisições / dia</li>
+                        <li>Wrapper Python completo</li>
+                        <li>Dashboard público</li>
+                        <li>14 séries do catálogo</li>
+                        <li>Suporte via GitHub Issues</li>
+                    </ul>
+                    <a href="https://github.com/fmaignacio/bacendata" class="btn btn-outline" target="_blank">Começar grátis</a>
+                </div>
+                <!-- Pro -->
+                <div class="pricing-card popular">
+                    <span class="pricing-badge">Mais popular</span>
+                    <h3>Pro</h3>
+                    <div class="pricing-price">R$ 79 <span>/ mês</span></div>
+                    <div class="pricing-desc">Para analistas e pequenas fintechs</div>
+                    <ul class="pricing-features">
+                        <li>10.000 requisições / dia</li>
+                        <li>API REST com chave dedicada</li>
+                        <li>Todas as séries SGS (qualquer código)</li>
+                        <li>Cache prioritário</li>
+                        <li>Suporte por e-mail (24h)</li>
+                        <li>Webhooks de atualização</li>
+                    </ul>
+                    <a href="#waitlist" class="btn btn-primary">Entrar na lista de espera</a>
+                </div>
+                <!-- Enterprise -->
+                <div class="pricing-card">
+                    <h3>Enterprise</h3>
+                    <div class="pricing-price">R$ 399 <span>/ mês</span></div>
+                    <div class="pricing-desc">Para bancos, assets e corporações</div>
+                    <ul class="pricing-features">
+                        <li>Requisições ilimitadas</li>
+                        <li>SLA 99.9% uptime</li>
+                        <li>API dedicada (servidor exclusivo)</li>
+                        <li>Dashboards customizados</li>
+                        <li>Suporte prioritário (Slack/Teams)</li>
+                        <li>Onboarding dedicado</li>
+                    </ul>
+                    <a href="mailto:contato@bacendata.com" class="btn btn-outline">Falar com vendas</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA / Waitlist -->
+    <section class="cta" id="waitlist">
+        <div class="container">
+            <h2>Entre na lista de espera</h2>
+            <p>Seja o primeiro a saber quando os planos Pro e Enterprise estiverem disponíveis.</p>
+            <form class="cta-form" action="https://formspree.io/f/PLACEHOLDER" method="POST">
+                <input type="email" name="email" placeholder="seu@email.com" required>
+                <button type="submit" class="btn btn-primary">Quero acesso</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="https://pypi.org/project/bacendata/" target="_blank">PyPI</a>
+                <a href="https://github.com/fmaignacio/bacendata" target="_blank">GitHub</a>
+                <a href="https://bacendata.streamlit.app" target="_blank">Dashboard</a>
+                <a href="mailto:contato@bacendata.com">Contato</a>
+            </div>
+            <p>&copy; 2025 BacenData. Dados abertos do Banco Central do Brasil, simplificados.</p>
+        </div>
+    </footer>
+</body>
+</html>
