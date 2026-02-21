@@ -137,8 +137,10 @@ def buscar_serie_last(codigo: int, n: int) -> pd.DataFrame:
         return pd.DataFrame(columns=["valor"])
 
 
-def calcular_datas(periodo_dias):
+def calcular_datas(periodo_dias, data_inicio=None, data_fim=None):
     """Retorna inicio e fim baseado no periodo selecionado."""
+    if periodo_dias == "custom":
+        return data_inicio.isoformat(), data_fim.isoformat()
     fim = date.today()
     if periodo_dias is None:
         inicio = date(1960, 1, 1)
@@ -321,8 +323,8 @@ with st.sidebar:
             )
 
         # Seletor de periodo
-        escalas = ["Dias", "Meses", "Anos"] if permite_dias else ["Meses", "Anos"]
-        escala = st.radio("Escala", escalas, horizontal=True, index=len(escalas) - 1)
+        escalas = ["Dias", "Meses", "Anos", "Personalizado"] if permite_dias else ["Meses", "Anos", "Personalizado"]
+        escala = st.radio("Escala", escalas, horizontal=True, index=len(escalas) - 2)
 
         if escala == "Dias":
             valor = st.slider("Período (dias)", 1, 30, 7)
@@ -332,6 +334,24 @@ with st.sidebar:
             valor = st.slider("Período (meses)", 1, 12, 3)
             periodo_dias = valor * 30
             periodo_label = f"{valor}m"
+        elif escala == "Personalizado":
+            periodo_dias = "custom"
+            periodo_label = "custom"
+            col_ini, col_fim = st.columns(2)
+            with col_ini:
+                data_inicio = st.date_input(
+                    "Início",
+                    value=date.today() - timedelta(days=365),
+                    min_value=date(1960, 1, 1),
+                    max_value=date.today(),
+                )
+            with col_fim:
+                data_fim = st.date_input(
+                    "Fim",
+                    value=date.today(),
+                    min_value=date(1960, 1, 1),
+                    max_value=date.today(),
+                )
         else:
             opcoes_anos = list(range(1, 11)) + ["Máximo"]
             valor = st.select_slider("Período (anos)", options=opcoes_anos, value=1)
@@ -369,7 +389,11 @@ if pagina == "Indicadores":
     # =========================================================================
     # MODO: Serie unica
     # =========================================================================
-    inicio, fim = calcular_datas(periodo_dias)
+    inicio, fim = calcular_datas(
+        periodo_dias,
+        data_inicio=data_inicio if periodo_dias == "custom" else None,
+        data_fim=data_fim if periodo_dias == "custom" else None,
+    )
     info = CATALOGO[codigo_selecionado]
 
     st.header(f"{info.nome}", divider="blue")
@@ -479,7 +503,11 @@ elif pagina == "Comparar séries":
     # =========================================================================
     # MODO: Comparacao de series
     # =========================================================================
-    inicio, fim = calcular_datas(periodo_dias)
+    inicio, fim = calcular_datas(
+        periodo_dias,
+        data_inicio=data_inicio if periodo_dias == "custom" else None,
+        data_fim=data_fim if periodo_dias == "custom" else None,
+    )
 
     st.header("Comparar séries", divider="blue")
 
