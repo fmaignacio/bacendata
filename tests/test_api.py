@@ -431,6 +431,7 @@ class TestWebhookStripe:
     def test_webhook_persiste_key(self, client: TestClient, tmp_path) -> None:
         """API key é salva no arquivo JSON."""
         import json
+
         from bacendata.api.routes import webhook
 
         webhook.KEYS_FILE = tmp_path / "api_keys.json"
