@@ -40,17 +40,6 @@ CORES = [
     "#8c564b",  # marrom
 ]
 
-PERIODOS = {
-    "1 mês": 30,
-    "3 meses": 90,
-    "6 meses": 180,
-    "1 ano": 365,
-    "2 anos": 730,
-    "5 anos": 1825,
-    "10 anos": 3650,
-    "Máximo": None,
-}
-
 CATEGORIAS = {
     "Taxas de Juros": [11, 12, 4390, 4189, 25434],
     "Inflação": [433],
@@ -322,20 +311,46 @@ with st.sidebar:
     if pagina in ("Indicadores", "Comparar séries"):
         st.divider()
 
+        # Determinar se a serie permite escala diaria
+        permite_dias = True
+        if pagina == "Indicadores":
+            permite_dias = CATALOGO[codigo_selecionado].periodicidade in ("diária", "semanal")
+        elif pagina == "Comparar séries" and codigos_comparar:
+            permite_dias = all(
+                CATALOGO[c].periodicidade in ("diária", "semanal") for c in codigos_comparar
+            )
+
         # Seletor de periodo
-        periodo_label = st.select_slider(
-            "Período",
-            options=list(PERIODOS.keys()),
-            value="1 ano",
-        )
-        periodo_dias = PERIODOS[periodo_label]
+        escalas = ["Dias", "Meses", "Anos"] if permite_dias else ["Meses", "Anos"]
+        escala = st.radio("Escala", escalas, horizontal=True, index=len(escalas) - 1)
+
+        if escala == "Dias":
+            valor = st.slider("Período (dias)", 1, 30, 7)
+            periodo_dias = valor
+            periodo_label = f"{valor}d"
+        elif escala == "Meses":
+            valor = st.slider("Período (meses)", 1, 12, 3)
+            periodo_dias = valor * 30
+            periodo_label = f"{valor}m"
+        else:
+            opcoes_anos = list(range(1, 11)) + ["Máximo"]
+            valor = st.select_slider("Período (anos)", options=opcoes_anos, value=1)
+            if valor == "Máximo":
+                periodo_dias = None
+                periodo_label = "max"
+            else:
+                periodo_dias = valor * 365
+                periodo_label = f"{valor}a"
 
         st.divider()
 
         # Media movel
         media_movel = st.checkbox("Média móvel", value=False)
         if media_movel:
-            janela_mm = st.slider("Janela (dias)", min_value=5, max_value=90, value=30)
+            if permite_dias:
+                janela_mm = st.slider("Janela (períodos/dias)", min_value=5, max_value=90, value=30)
+            else:
+                janela_mm = st.slider("Janela (meses)", min_value=2, max_value=24, value=6)
 
     st.divider()
     st.markdown(
