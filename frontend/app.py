@@ -347,7 +347,10 @@ with st.sidebar:
         # Media movel
         media_movel = st.checkbox("Média móvel", value=False)
         if media_movel:
-            janela_mm = st.slider("Janela (dias)", min_value=5, max_value=90, value=30)
+            if permite_dias:
+                janela_mm = st.slider("Janela (períodos/dias)", min_value=5, max_value=90, value=30)
+            else:
+                janela_mm = st.slider("Janela (meses)", min_value=2, max_value=24, value=6)
 
     st.divider()
     st.markdown(
