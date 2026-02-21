@@ -311,8 +311,18 @@ with st.sidebar:
     if pagina in ("Indicadores", "Comparar séries"):
         st.divider()
 
+        # Determinar se a serie permite escala diaria
+        permite_dias = True
+        if pagina == "Indicadores":
+            permite_dias = CATALOGO[codigo_selecionado].periodicidade in ("diária", "semanal")
+        elif pagina == "Comparar séries" and codigos_comparar:
+            permite_dias = all(
+                CATALOGO[c].periodicidade in ("diária", "semanal") for c in codigos_comparar
+            )
+
         # Seletor de periodo
-        escala = st.radio("Escala", ["Dias", "Meses", "Anos"], horizontal=True, index=2)
+        escalas = ["Dias", "Meses", "Anos"] if permite_dias else ["Meses", "Anos"]
+        escala = st.radio("Escala", escalas, horizontal=True, index=len(escalas) - 1)
 
         if escala == "Dias":
             valor = st.slider("Período (dias)", 1, 30, 7)
