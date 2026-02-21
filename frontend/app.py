@@ -40,17 +40,6 @@ CORES = [
     "#8c564b",  # marrom
 ]
 
-PERIODOS = {
-    "1 mês": 30,
-    "3 meses": 90,
-    "6 meses": 180,
-    "1 ano": 365,
-    "2 anos": 730,
-    "5 anos": 1825,
-    "10 anos": 3650,
-    "Máximo": None,
-}
-
 CATEGORIAS = {
     "Taxas de Juros": [11, 12, 4390, 4189, 25434],
     "Inflação": [433],
@@ -323,12 +312,25 @@ with st.sidebar:
         st.divider()
 
         # Seletor de periodo
-        periodo_label = st.select_slider(
-            "Período",
-            options=list(PERIODOS.keys()),
-            value="1 ano",
-        )
-        periodo_dias = PERIODOS[periodo_label]
+        escala = st.radio("Escala", ["Dias", "Meses", "Anos"], horizontal=True, index=2)
+
+        if escala == "Dias":
+            valor = st.slider("Período (dias)", 1, 30, 7)
+            periodo_dias = valor
+            periodo_label = f"{valor}d"
+        elif escala == "Meses":
+            valor = st.slider("Período (meses)", 1, 12, 3)
+            periodo_dias = valor * 30
+            periodo_label = f"{valor}m"
+        else:
+            opcoes_anos = list(range(1, 11)) + ["Máximo"]
+            valor = st.select_slider("Período (anos)", options=opcoes_anos, value=1)
+            if valor == "Máximo":
+                periodo_dias = None
+                periodo_label = "max"
+            else:
+                periodo_dias = valor * 365
+                periodo_label = f"{valor}a"
 
         st.divider()
 
