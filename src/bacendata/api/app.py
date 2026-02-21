@@ -22,6 +22,17 @@ logger = logging.getLogger("bacendata")
 
 def create_app() -> FastAPI:
     """Cria e configura a aplicação FastAPI."""
+
+    # Sentry: rastreamento de erros em produção
+    if settings.sentry_dsn:
+        import sentry_sdk
+
+        sentry_sdk.init(
+            dsn=settings.sentry_dsn,
+            traces_sample_rate=0.2,
+            send_default_pii=False,
+        )
+
     app = FastAPI(
         title=settings.app_name,
         description=(

@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # Stripe (webhook para gerar API keys após pagamento)
     stripe_webhook_secret: Optional[str] = None
 
+    # Sentry (rastreamento de erros em produção)
+    sentry_dsn: Optional[str] = None
+
     # Cache
     cache_ativo: bool = True
 
