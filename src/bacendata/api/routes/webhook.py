@@ -32,8 +32,8 @@ KEYS_FILE = Path("/app/data/api_keys.json")
 
 # Mapeamento de Price ID → plano
 PRICE_TO_PLAN = {
-    "price_1T2jtH2cO5c0PQGeWxzZVHZb": "pro",
-    "price_1T2ju62cO5c0PQGeKXGVEFER": "enterprise",
+    "price_1T3I5I2cO5c0PQGeanIeAVvA": "pro",
+    "price_1T3I6q2cO5c0PQGeUqQMXM1y": "enterprise",
 }
 
 
