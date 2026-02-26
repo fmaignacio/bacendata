@@ -39,6 +39,7 @@ def app():
         mock_settings.rate_limit_free = 100
         mock_settings.rate_limit_pro = 10_000
         mock_settings.cache_ativo = False
+        mock_settings.sentry_dsn = None
         application = create_app()
     return application
 
