@@ -385,7 +385,7 @@ class TestErros:
 
 
 class TestWebhookStripe:
-    def _checkout_event(self, email="user@example.com", price_id="price_1T2jtH2cO5c0PQGeWxzZVHZb"):
+    def _checkout_event(self, email="user@example.com", price_id="price_1T3I5I2cO5c0PQGeanIeAVvA"):
         """Helper: cria evento checkout.session.completed do Stripe."""
         return {
             "type": "checkout.session.completed",
@@ -424,7 +424,7 @@ class TestWebhookStripe:
 
         webhook.KEYS_FILE = tmp_path / "api_keys.json"
 
-        event = self._checkout_event(price_id="price_1T2ju62cO5c0PQGeKXGVEFER")
+        event = self._checkout_event(price_id="price_1T3I6q2cO5c0PQGeUqQMXM1y")
         response = client.post("/webhook/stripe", json=event)
         assert response.status_code == 200
         assert response.json()["plano"] == "enterprise"
