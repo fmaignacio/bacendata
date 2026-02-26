@@ -1,0 +1,40 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "API (FastAPI)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "bacendata.api.app:create_app",
+                "--factory",
+                "--reload",
+                "--port", "8000"
+            ],
+            "env": {
+                "BACENDATA_DEBUG": "true"
+            },
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Dashboard (Streamlit)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "frontend/app.py"
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Testes (pytest)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": ["tests/", "-v"],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

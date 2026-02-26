@@ -1,0 +1,21 @@
+{
+    "recommendations": [
+        // Python essenciais
+        "ms-python.python",
+        "ms-python.debugpy",
+        "charliermarsh.ruff",
+
+        // Git
+        "eamodio.gitlens",
+
+        // Frontend (landing page)
+        "esbenp.prettier-vscode",
+
+        // API (FastAPI)
+        "humao.rest-client",
+
+        // Produtividade
+        "streetsidesoftware.code-spell-checker",
+        "streetsidesoftware.code-spell-checker-portuguese-brazilian"
+    ]
+}
