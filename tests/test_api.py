@@ -407,9 +407,7 @@ class TestWebhookStripe:
                 "object": {
                     "id": "cs_test_123",
                     "customer_email": email,
-                    "line_items": {
-                        "data": [{"price": {"id": price_id}}]
-                    },
+                    "line_items": {"data": [{"price": {"id": price_id}}]},
                     "metadata": {},
                 }
             },
@@ -496,3 +494,112 @@ class TestWebhookStripe:
             headers={"content-type": "application/json"},
         )
         assert response.status_code == 400
+
+
+# ============================================================================
+# Testes do Dashboard do Usuário
+# ============================================================================
+
+
+class TestDashboard:
+    def _criar_api_key(self, client: TestClient, email: str = "dash@test.com") -> str:
+        """Helper: cria API key via webhook e retorna a key."""
+        event = {
+            "type": "checkout.session.completed",
+            "data": {
+                "object": {
+                    "id": "cs_dash_123",
+                    "customer_email": email,
+                    "line_items": {"data": [{"price": {"id": "price_test_pro"}}]},
+                    "metadata": {},
+                }
+            },
+        }
+        response = client.post("/webhook/stripe", json=event)
+        return response.json()["api_key"]
+
+    def test_me_sem_api_key(self, client: TestClient) -> None:
+        """GET /api/v1/me sem API key retorna acesso anônimo."""
+        response = client.get("/api/v1/me")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["autenticado"] is False
+        assert data["plano"] == "free"
+
+    def test_me_com_api_key(self, client: TestClient) -> None:
+        """GET /api/v1/me com API key retorna dados do usuário."""
+        api_key = self._criar_api_key(client)
+        response = client.get("/api/v1/me", headers={"X-API-Key": api_key})
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["autenticado"] is True
+        assert data["plano"] == "pro"
+        assert data["email"] == "dash@test.com"
+        assert data["ativo"] is True
+        assert "uso" in data
+        assert data["uso"]["hoje"] >= 0
+        assert data["uso"]["limite_diario"] == 10_000
+
+    def test_me_api_key_preview(self, client: TestClient) -> None:
+        """GET /api/v1/me mostra preview parcial da API key."""
+        api_key = self._criar_api_key(client)
+        response = client.get("/api/v1/me", headers={"X-API-Key": api_key})
+        data = response.json()
+        assert "api_key_preview" in data
+        assert data["api_key_preview"].startswith(api_key[:8])
+        assert data["api_key_preview"].endswith(api_key[-4:])
+
+    def test_me_api_key_invalida(self, client: TestClient) -> None:
+        """GET /api/v1/me com key inválida retorna 401."""
+        # Primeiro cria uma key para que o sistema tenha keys no banco
+        self._criar_api_key(client)
+        response = client.get(
+            "/api/v1/me", headers={"X-API-Key": "bcd_chave_invalida_000000000000"}
+        )
+        assert response.status_code == 401
+
+    def test_usage_sem_api_key(self, client: TestClient) -> None:
+        """GET /api/v1/usage sem API key retorna mensagem informativa."""
+        response = client.get("/api/v1/usage")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["autenticado"] is False
+
+    def test_usage_com_api_key(self, client: TestClient) -> None:
+        """GET /api/v1/usage com API key retorna estatísticas de uso."""
+        api_key = self._criar_api_key(client)
+
+        # Fazer algumas requisições para gerar uso
+        response = client.get("/api/v1/catalogo", headers={"X-API-Key": api_key})
+        assert response.status_code == 200
+
+        response = client.get("/api/v1/usage", headers={"X-API-Key": api_key})
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["autenticado"] is True
+        assert data["plano"] == "pro"
+        assert "uso" in data
+        assert "hoje" in data["uso"]
+        assert "ultimos_7_dias" in data["uso"]
+        assert "ultimos_30_dias" in data["uso"]
+        assert "top_endpoints" in data
+        assert "uso_diario" in data
+
+    def test_usage_top_endpoints(self, client: TestClient) -> None:
+        """GET /api/v1/usage mostra top endpoints mais usados."""
+        api_key = self._criar_api_key(client)
+
+        # Gerar uso em diferentes endpoints
+        client.get("/api/v1/catalogo", headers={"X-API-Key": api_key})
+        client.get("/api/v1/catalogo", headers={"X-API-Key": api_key})
+        client.get("/api/v1/catalogo/search?q=selic", headers={"X-API-Key": api_key})
+
+        response = client.get("/api/v1/usage", headers={"X-API-Key": api_key})
+        data = response.json()
+
+        assert len(data["top_endpoints"]) >= 1
+        for ep in data["top_endpoints"]:
+            assert "endpoint" in ep
+            assert "total" in ep

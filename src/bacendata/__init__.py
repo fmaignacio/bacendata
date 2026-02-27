@@ -8,5 +8,5 @@ Uso rápido:
 
 from bacendata.wrapper import bacen_sgs as sgs
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __all__ = ["sgs", "__version__"]

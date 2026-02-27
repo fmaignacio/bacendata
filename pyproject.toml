@@ -76,6 +76,9 @@ line-length = 100
 [tool.ruff.lint]
 select = ["E", "F", "I", "W"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/bacendata/services/email.py" = ["E501"]
+
 [tool.black]
 target-version = ["py310"]
 line-length = 100

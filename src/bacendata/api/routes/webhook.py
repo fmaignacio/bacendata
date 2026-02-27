@@ -26,6 +26,7 @@ logger = logging.getLogger("bacendata")
 
 router = APIRouter(tags=["Webhook"])
 
+
 def _price_to_plan() -> dict[str, str]:
     """Mapeamento de Price ID → plano, configurável via env vars."""
     mapping = {}
@@ -50,9 +51,7 @@ def _verificar_assinatura(payload: bytes, sig_header: str, secret: str) -> bool:
         signature = elements.get("v1", "")
 
         signed_payload = f"{timestamp}.{payload.decode()}"
-        expected = hmac.new(
-            secret.encode(), signed_payload.encode(), hashlib.sha256
-        ).hexdigest()
+        expected = hmac.new(secret.encode(), signed_payload.encode(), hashlib.sha256).hexdigest()
 
         # Verificar tolerância de tempo (5 minutos)
         if abs(time.time() - int(timestamp)) > 300:
