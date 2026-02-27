@@ -4,8 +4,8 @@ bacendata.api.routes.auth
 
 Autenticação por API key.
 
-No MVP, as chaves são configuradas via variável de ambiente BACENDATA_API_KEYS.
-Em produção, serão armazenadas no PostgreSQL.
+Busca chaves no PostgreSQL. Fallback para variável de ambiente BACENDATA_API_KEYS
+quando o banco de dados não está configurado.
 """
 
 import logging
@@ -24,8 +24,8 @@ PLANOS = {
 }
 
 
-def _carregar_api_keys() -> Dict[str, str]:
-    """Carrega API keys da configuração.
+def _carregar_api_keys_env() -> Dict[str, str]:
+    """Carrega API keys da variável de ambiente (fallback).
 
     Formato: "chave1:plano,chave2:plano"
     """
@@ -41,33 +41,58 @@ def _carregar_api_keys() -> Dict[str, str]:
     return keys
 
 
-def autenticar_api_key(
+async def _buscar_key_db(api_key: str) -> Optional[str]:
+    """Busca API key no banco de dados. Retorna o plano ou None."""
+    from sqlalchemy import select
+
+    from bacendata.core.database import get_session
+    from bacendata.core.models import ApiKey
+
+    async with get_session() as session:
+        result = await session.execute(
+            select(ApiKey.plano).where(ApiKey.key == api_key, ApiKey.ativo.is_(True))
+        )
+        row = result.scalar_one_or_none()
+        return row
+
+
+async def autenticar_api_key(
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
 ) -> Tuple[Optional[str], str]:
     """Valida API key e retorna (chave, plano).
 
-    Se nenhuma API key for configurada no servidor, permite acesso livre como 'free'.
-    Se API keys estiverem configuradas e a chave for inválida, retorna 401.
+    Busca primeiro no banco de dados, depois na variável de ambiente.
+    Se nenhuma API key for configurada, permite acesso livre como 'free'.
 
     Returns:
         Tupla (api_key, plano). api_key pode ser None para acesso anônimo.
     """
-    api_keys = _carregar_api_keys()
-
-    # Se nenhuma key está configurada, acesso livre
-    if not api_keys:
-        return (None, "free")
-
-    # Se keys estão configuradas mas nenhuma foi enviada
+    # Se nenhuma key foi enviada
     if not x_api_key:
         return (None, "free")
 
-    # Validar a key enviada
-    plano = api_keys.get(x_api_key)
-    if plano is None:
-        raise HTTPException(
-            status_code=401,
-            detail="API key inválida. Verifique sua chave de acesso.",
-        )
+    # Tentar banco de dados primeiro (se inicializado)
+    from bacendata.core import database as db
 
-    return (x_api_key, plano)
+    db_ativo = db.async_session is not None
+    if db_ativo:
+        plano = await _buscar_key_db(x_api_key)
+        if plano:
+            return (x_api_key, plano)
+
+    # Fallback: variável de ambiente
+    api_keys_env = _carregar_api_keys_env()
+    if api_keys_env:
+        plano = api_keys_env.get(x_api_key)
+        if plano:
+            return (x_api_key, plano)
+
+    # Se não há nenhuma fonte de keys configurada, acesso livre
+    if not db_ativo and not api_keys_env:
+        return (None, "free")
+
+    # Key inválida
+    raise HTTPException(
+        status_code=401,
+        detail="API key inválida. Verifique sua chave de acesso.",
+    )

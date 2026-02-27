@@ -7,8 +7,8 @@ Webhook do Stripe para processar pagamentos e gerar API keys.
 Fluxo:
 1. Cliente paga via Payment Link do Stripe
 2. Stripe envia evento checkout.session.completed
-3. Webhook gera API key e salva no arquivo de keys
-4. Key é enviada ao cliente via metadata do Stripe
+3. Webhook gera API key e salva no PostgreSQL
+4. Key é retornada na resposta
 """
 
 import hashlib
@@ -17,7 +17,6 @@ import json
 import logging
 import secrets
 import time
-from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Request
 
@@ -26,9 +25,6 @@ from bacendata.core.config import settings
 logger = logging.getLogger("bacendata")
 
 router = APIRouter(tags=["Webhook"])
-
-# Arquivo onde as API keys são persistidas
-KEYS_FILE = Path("/app/data/api_keys.json")
 
 # Mapeamento de Price ID → plano
 PRICE_TO_PLAN = {
@@ -41,19 +37,6 @@ def _gerar_api_key() -> str:
     """Gera uma API key segura com prefixo identificador."""
     token = secrets.token_hex(24)
     return f"bcd_{token}"
-
-
-def _carregar_keys() -> dict:
-    """Carrega API keys do arquivo JSON."""
-    if KEYS_FILE.exists():
-        return json.loads(KEYS_FILE.read_text())
-    return {}
-
-
-def _salvar_keys(keys: dict) -> None:
-    """Salva API keys no arquivo JSON."""
-    KEYS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    KEYS_FILE.write_text(json.dumps(keys, indent=2))
 
 
 def _verificar_assinatura(payload: bytes, sig_header: str, secret: str) -> bool:
@@ -75,6 +58,24 @@ def _verificar_assinatura(payload: bytes, sig_header: str, secret: str) -> bool:
         return hmac.compare_digest(expected, signature)
     except Exception:
         return False
+
+
+async def _salvar_key_db(
+    api_key: str, plano: str, email: str | None, session_id: str | None
+) -> None:
+    """Salva API key no banco de dados."""
+    from bacendata.core.database import get_session
+    from bacendata.core.models import ApiKey
+
+    async with get_session() as session:
+        nova_key = ApiKey(
+            key=api_key,
+            plano=plano,
+            email=email,
+            stripe_session_id=session_id,
+        )
+        session.add(nova_key)
+        await session.commit()
 
 
 @router.post("/webhook/stripe")
@@ -118,20 +119,15 @@ async def stripe_webhook(request: Request):
     # Gerar API key
     api_key = _gerar_api_key()
 
-    # Salvar no arquivo de keys
-    keys = _carregar_keys()
-    keys[api_key] = {
-        "plano": plano,
-        "email": customer_email,
-        "stripe_session_id": session.get("id"),
-        "criado_em": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-    _salvar_keys(keys)
+    # Salvar no banco de dados (se inicializado) ou fallback em memória
+    from bacendata.core import database as db
 
-    # Atualizar variável de ambiente em memória para o rate limiter reconhecer
-    existing = settings.api_keys or ""
-    new_entry = f"{api_key}:{plano}"
-    settings.api_keys = f"{existing},{new_entry}" if existing else new_entry
+    if db.async_session is not None:
+        await _salvar_key_db(api_key, plano, customer_email, session.get("id"))
+    else:
+        existing = settings.api_keys or ""
+        new_entry = f"{api_key}:{plano}"
+        settings.api_keys = f"{existing},{new_entry}" if existing else new_entry
 
     logger.info(
         "Nova API key gerada: plano=%s email=%s key=%s...%s",

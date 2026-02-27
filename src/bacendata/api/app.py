@@ -9,6 +9,7 @@ Uso:
 """
 
 import logging
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
@@ -18,6 +19,25 @@ from bacendata.core.config import settings
 from bacendata.wrapper import cache
 
 logger = logging.getLogger("bacendata")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Gerencia startup e shutdown da aplicação."""
+    # Startup: inicializar banco de dados
+    if settings.database_url:
+        from bacendata.core.database import init_db
+
+        await init_db(settings.database_url)
+        logger.info("PostgreSQL conectado.")
+
+    yield
+
+    # Shutdown: fechar conexão com banco
+    if settings.database_url:
+        from bacendata.core.database import close_db
+
+        await close_db()
 
 
 def create_app() -> FastAPI:
@@ -50,6 +70,7 @@ def create_app() -> FastAPI:
         version=settings.app_version,
         docs_url="/docs",
         redoc_url="/redoc",
+        lifespan=lifespan,
     )
 
     # Middleware

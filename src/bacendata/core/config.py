@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     bacen_max_concurrent: int = 5
     bacen_timeout: int = 30
 
+    # Banco de dados (PostgreSQL em produção, SQLite em dev)
+    database_url: Optional[str] = None
+
     # Stripe (webhook para gerar API keys após pagamento)
     stripe_webhook_secret: Optional[str] = None
 

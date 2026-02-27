@@ -2,6 +2,7 @@
 Testes da API REST FastAPI.
 
 Usa httpx.AsyncClient + respx para mockar as chamadas à API do BACEN.
+Webhook e auth usam SQLite em memória para testar persistência.
 """
 
 from unittest.mock import patch
@@ -19,6 +20,8 @@ from bacendata.wrapper.bacen_sgs import BASE_URL, ULTIMOS_URL
 # Fixtures
 # ============================================================================
 
+DB_URL = "sqlite+aiosqlite:///:memory:"
+
 
 @pytest.fixture(autouse=True)
 def desativar_cache():
@@ -32,7 +35,7 @@ def desativar_cache():
 
 @pytest.fixture
 def app():
-    """Cria app FastAPI para testes (sem cache)."""
+    """Cria app FastAPI para testes com SQLite em memória."""
     with patch("bacendata.api.app.settings") as mock_settings:
         mock_settings.app_name = "BacenData API"
         mock_settings.app_version = "0.2.0"
@@ -40,14 +43,16 @@ def app():
         mock_settings.rate_limit_pro = 10_000
         mock_settings.cache_ativo = False
         mock_settings.sentry_dsn = None
+        mock_settings.database_url = DB_URL
         application = create_app()
     return application
 
 
 @pytest.fixture
 def client(app):
-    """Client síncrono para testes."""
-    return TestClient(app)
+    """Client síncrono para testes (lifespan inicializa o DB)."""
+    with TestClient(app, raise_server_exceptions=True) as c:
+        yield c
 
 
 def _mock_dados_sgs(codigo: int, dados: list) -> None:
@@ -380,7 +385,7 @@ class TestErros:
 
 
 # ============================================================================
-# Testes do Webhook Stripe
+# Testes do Webhook Stripe + PostgreSQL
 # ============================================================================
 
 
@@ -401,12 +406,8 @@ class TestWebhookStripe:
             },
         }
 
-    def test_webhook_checkout_gera_api_key(self, client: TestClient, tmp_path) -> None:
-        """Webhook de checkout gera API key e retorna."""
-        from bacendata.api.routes import webhook
-
-        webhook.KEYS_FILE = tmp_path / "api_keys.json"
-
+    def test_webhook_checkout_gera_api_key(self, client: TestClient) -> None:
+        """Webhook de checkout gera API key e salva no banco."""
         event = self._checkout_event()
         response = client.post("/webhook/stripe", json=event)
         assert response.status_code == 200
@@ -418,34 +419,34 @@ class TestWebhookStripe:
         assert data["api_key"].startswith("bcd_")
         assert len(data["api_key"]) == 52  # "bcd_" + 48 hex chars
 
-    def test_webhook_enterprise(self, client: TestClient, tmp_path) -> None:
+    def test_webhook_enterprise(self, client: TestClient) -> None:
         """Webhook com price enterprise retorna plano enterprise."""
-        from bacendata.api.routes import webhook
-
-        webhook.KEYS_FILE = tmp_path / "api_keys.json"
-
         event = self._checkout_event(price_id="price_1T3I6q2cO5c0PQGeUqQMXM1y")
         response = client.post("/webhook/stripe", json=event)
         assert response.status_code == 200
         assert response.json()["plano"] == "enterprise"
 
-    def test_webhook_persiste_key(self, client: TestClient, tmp_path) -> None:
-        """API key é salva no arquivo JSON."""
-        import json
-
-        from bacendata.api.routes import webhook
-
-        webhook.KEYS_FILE = tmp_path / "api_keys.json"
-
+    def test_webhook_persiste_key_no_db(self, client: TestClient) -> None:
+        """API key é salva no banco de dados e pode ser consultada."""
         event = self._checkout_event(email="teste@bacendata.com")
         response = client.post("/webhook/stripe", json=event)
         api_key = response.json()["api_key"]
 
-        # Verificar arquivo
-        keys = json.loads(webhook.KEYS_FILE.read_text())
-        assert api_key in keys
-        assert keys[api_key]["plano"] == "pro"
-        assert keys[api_key]["email"] == "teste@bacendata.com"
+        # Verificar que a key funciona para autenticação via DB
+        response2 = client.get("/api/v1/catalogo", headers={"X-API-Key": api_key})
+        assert response2.status_code == 200
+
+    def test_webhook_key_invalida_retorna_401(self, client: TestClient) -> None:
+        """API key inexistente retorna 401 quando DB tem keys."""
+        # Cria uma key válida para que o sistema tenha keys no banco
+        event = self._checkout_event()
+        client.post("/webhook/stripe", json=event)
+
+        # Tenta com key inválida
+        response = client.get(
+            "/api/v1/catalogo", headers={"X-API-Key": "bcd_chave_invalida_000000000000"}
+        )
+        assert response.status_code == 401
 
     def test_webhook_ignora_outros_eventos(self, client: TestClient) -> None:
         """Eventos que não são checkout são ignorados."""
