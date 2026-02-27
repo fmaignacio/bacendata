@@ -11,7 +11,6 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import func, select
 
 from bacendata.api.routes.auth import autenticar_api_key
 
@@ -45,6 +44,8 @@ async def get_me(auth: tuple = Depends(autenticar_api_key)):
             "plano": plano,
             "api_key_preview": f"{api_key[:8]}...{api_key[-4:]}",
         }
+
+    from sqlalchemy import func, select
 
     from bacendata.core.config import settings
     from bacendata.core.database import get_session
@@ -108,6 +109,8 @@ async def get_usage(auth: tuple = Depends(autenticar_api_key)):
 
     if db.async_session is None:
         return {"autenticado": True, "plano": plano, "estatisticas": None}
+
+    from sqlalchemy import func, select
 
     from bacendata.core.database import get_session
     from bacendata.core.models import UsageLog
