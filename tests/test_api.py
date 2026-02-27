@@ -36,7 +36,11 @@ def desativar_cache():
 @pytest.fixture
 def app():
     """Cria app FastAPI para testes com SQLite em memória."""
-    with patch("bacendata.api.app.settings") as mock_settings:
+    with (
+        patch("bacendata.api.app.settings") as mock_settings,
+        patch("bacendata.api.routes.webhook.settings", mock_settings),
+        patch("bacendata.services.email.settings", mock_settings),
+    ):
         mock_settings.app_name = "BacenData API"
         mock_settings.app_version = "0.2.0"
         mock_settings.rate_limit_free = 100
@@ -44,8 +48,13 @@ def app():
         mock_settings.cache_ativo = False
         mock_settings.sentry_dsn = None
         mock_settings.database_url = DB_URL
+        mock_settings.stripe_webhook_secret = None
+        mock_settings.stripe_price_pro = "price_test_pro"
+        mock_settings.stripe_price_enterprise = "price_test_enterprise"
+        mock_settings.resend_api_key = None
+        mock_settings.resend_from_email = "BacenData <noreply@bacendata.com>"
         application = create_app()
-    return application
+        yield application
 
 
 @pytest.fixture
@@ -390,7 +399,7 @@ class TestErros:
 
 
 class TestWebhookStripe:
-    def _checkout_event(self, email="user@example.com", price_id="price_1T3I5I2cO5c0PQGeanIeAVvA"):
+    def _checkout_event(self, email="user@example.com", price_id="price_test_pro"):
         """Helper: cria evento checkout.session.completed do Stripe."""
         return {
             "type": "checkout.session.completed",
@@ -418,10 +427,11 @@ class TestWebhookStripe:
         assert data["email"] == "user@example.com"
         assert data["api_key"].startswith("bcd_")
         assert len(data["api_key"]) == 52  # "bcd_" + 48 hex chars
+        assert data["email_enviado"] is False  # Resend não configurado nos testes
 
     def test_webhook_enterprise(self, client: TestClient) -> None:
         """Webhook com price enterprise retorna plano enterprise."""
-        event = self._checkout_event(price_id="price_1T3I6q2cO5c0PQGeUqQMXM1y")
+        event = self._checkout_event(price_id="price_test_enterprise")
         response = client.post("/webhook/stripe", json=event)
         assert response.status_code == 200
         assert response.json()["plano"] == "enterprise"
@@ -454,6 +464,29 @@ class TestWebhookStripe:
         response = client.post("/webhook/stripe", json=event)
         assert response.status_code == 200
         assert response.json()["status"] == "ignored"
+
+    def test_webhook_envia_email_quando_resend_configurado(self, client: TestClient) -> None:
+        """Webhook envia email via Resend quando API key está configurada."""
+        from bacendata.services import email as email_mod
+
+        event = self._checkout_event(email="cliente@test.com")
+
+        # Ativar resend temporariamente e mockar o envio
+        email_mod.settings.resend_api_key = "re_test_123"
+        with patch.object(email_mod.resend.Emails, "send") as mock_send:
+            response = client.post("/webhook/stripe", json=event)
+
+        # Restaurar
+        email_mod.settings.resend_api_key = None
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["email_enviado"] is True
+        mock_send.assert_called_once()
+
+        call_args = mock_send.call_args[0][0]
+        assert call_args["to"] == ["cliente@test.com"]
+        assert "API Key" in call_args["subject"]
 
     def test_webhook_payload_invalido(self, client: TestClient) -> None:
         """Payload inválido retorna 400."""

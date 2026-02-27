@@ -26,11 +26,14 @@ logger = logging.getLogger("bacendata")
 
 router = APIRouter(tags=["Webhook"])
 
-# Mapeamento de Price ID → plano
-PRICE_TO_PLAN = {
-    "price_1T3I5I2cO5c0PQGeanIeAVvA": "pro",
-    "price_1T3I6q2cO5c0PQGeUqQMXM1y": "enterprise",
-}
+def _price_to_plan() -> dict[str, str]:
+    """Mapeamento de Price ID → plano, configurável via env vars."""
+    mapping = {}
+    if settings.stripe_price_pro:
+        mapping[settings.stripe_price_pro] = "pro"
+    if settings.stripe_price_enterprise:
+        mapping[settings.stripe_price_enterprise] = "enterprise"
+    return mapping
 
 
 def _gerar_api_key() -> str:
@@ -84,11 +87,9 @@ async def stripe_webhook(request: Request):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature", "")
 
-    # TODO: Reabilitar verificação de assinatura em produção
-    # Verificação temporariamente desabilitada para debug
-    # if settings.stripe_webhook_secret:
-    #     if not _verificar_assinatura(payload, sig_header, settings.stripe_webhook_secret):
-    #         raise HTTPException(status_code=400, detail="Assinatura inválida")
+    if settings.stripe_webhook_secret:
+        if not _verificar_assinatura(payload, sig_header, settings.stripe_webhook_secret):
+            raise HTTPException(status_code=400, detail="Assinatura inválida")
 
     try:
         event = json.loads(payload)
@@ -106,11 +107,12 @@ async def stripe_webhook(request: Request):
 
     # Determinar plano a partir dos line items
     plano = "pro"  # default
+    price_map = _price_to_plan()
     line_items = session.get("line_items", {}).get("data", [])
     for item in line_items:
         price_id = item.get("price", {}).get("id", "")
-        if price_id in PRICE_TO_PLAN:
-            plano = PRICE_TO_PLAN[price_id]
+        if price_id in price_map:
+            plano = price_map[price_id]
             break
 
     # Tentar via metadata do Payment Link
@@ -138,9 +140,17 @@ async def stripe_webhook(request: Request):
         api_key[-4:],
     )
 
+    # Enviar API key por email
+    email_enviado = False
+    if customer_email:
+        from bacendata.services.email import enviar_api_key
+
+        email_enviado = enviar_api_key(customer_email, api_key, plano)
+
     return {
         "status": "ok",
         "api_key": api_key,
         "plano": plano,
         "email": customer_email,
+        "email_enviado": email_enviado,
     }

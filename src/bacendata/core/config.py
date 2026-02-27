@@ -37,6 +37,12 @@ class Settings(BaseSettings):
 
     # Stripe (webhook para gerar API keys após pagamento)
     stripe_webhook_secret: Optional[str] = None
+    stripe_price_pro: Optional[str] = None
+    stripe_price_enterprise: Optional[str] = None
+
+    # Resend (envio de email com API key após pagamento)
+    resend_api_key: Optional[str] = None
+    resend_from_email: str = "BacenData <noreply@bacendata.com>"
 
     # Sentry (rastreamento de erros em produção)
     sentry_dsn: Optional[str] = None
