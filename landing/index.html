@@ -13,6 +13,36 @@
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://bacendata.com">
 
+    <!-- Canonical -->
+    <link rel="canonical" href="https://bacendata.com/">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="BacenData — Dados do Banco Central, simplificados">
+    <meta name="twitter:description" content="Wrapper Python, API REST e dashboard para indicadores do Banco Central do Brasil.">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "BacenData",
+        "description": "Wrapper Python e API REST para acesso simplificado aos dados do Banco Central do Brasil (SGS). Selic, IPCA, câmbio, crédito e mais.",
+        "url": "https://bacendata.com",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Cross-platform",
+        "programmingLanguage": "Python",
+        "offers": [
+            {"@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "BRL", "description": "100 requisições/dia"},
+            {"@type": "Offer", "name": "Pro", "price": "79", "priceCurrency": "BRL", "description": "10.000 requisições/dia"},
+            {"@type": "Offer", "name": "Enterprise", "price": "399", "priceCurrency": "BRL", "description": "Requisições ilimitadas"}
+        ],
+        "author": {"@type": "Organization", "name": "BacenData", "url": "https://bacendata.com"},
+        "softwareVersion": "0.2.0",
+        "license": "https://opensource.org/licenses/MIT"
+    }
+    </script>
+
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
 
@@ -481,8 +511,9 @@
                 <a href="#features" class="hide-mobile">Funcionalidades</a>
                 <a href="#series" class="hide-mobile">Indicadores</a>
                 <a href="#pricing">Planos</a>
-                <a href="https://bacendata.streamlit.app" target="_blank">Dashboard</a>
-                <a href="https://bacendata-production.up.railway.app/docs" target="_blank">API Docs</a>
+                <a href="/docs">Docs</a>
+                <a href="/dashboard">Dashboard</a>
+                <a href="https://bacendata-production.up.railway.app/docs" target="_blank">API Ref</a>
                 <a href="https://github.com/fmaignacio/bacendata" target="_blank" class="btn btn-outline">GitHub</a>
             </div>
         </div>

@@ -91,4 +91,34 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["X-RateLimit-Limit"] = str(limite)
         response.headers["X-RateLimit-Remaining"] = str(max(0, limite - contagem))
+
+        # Registrar uso no banco (fire-and-forget)
+        await self._registrar_uso(request, response.status_code)
+
         return response
+
+    async def _registrar_uso(self, request: Request, status_code: int) -> None:
+        """Salva registro de uso no banco de dados (se disponível)."""
+        try:
+            from bacendata.core import database as db
+
+            if db.async_session is None:
+                return
+
+            from bacendata.core.database import get_session
+            from bacendata.core.models import UsageLog
+
+            api_key = request.headers.get("X-API-Key")
+            client_ip = request.client.host if request.client else None
+
+            async with get_session() as session:
+                log = UsageLog(
+                    api_key=api_key,
+                    ip=client_ip,
+                    endpoint=request.url.path,
+                    status_code=status_code,
+                )
+                session.add(log)
+                await session.commit()
+        except Exception:
+            pass  # Não bloquear a resposta por falha no log

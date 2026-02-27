@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentação — BacenData | API e Wrapper Python para dados do Banco Central</title>
+    <meta name="description" content="Documentação completa do BacenData: como instalar, usar o wrapper Python, consultar a API REST, exemplos práticos para Selic, IPCA, câmbio e mais indicadores do Banco Central.">
+    <meta name="keywords" content="BacenData documentação, API Banco Central, wrapper Python BACEN, SGS API, Selic API, IPCA API, câmbio API, dados econômicos Brasil, tutorial Python BACEN">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Documentação BacenData — API e Wrapper Python para o Banco Central">
+    <meta property="og:description" content="Guia completo: instale com pip, consulte Selic, IPCA e câmbio em 1 linha de Python. API REST com autenticação e rate limiting.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bacendata.com/docs">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://bacendata.com/docs">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "Documentação BacenData — API e Wrapper Python para dados do Banco Central",
+        "description": "Guia completo para usar o BacenData: wrapper Python e API REST para acessar dados do Banco Central do Brasil (SGS).",
+        "author": {"@type": "Organization", "name": "BacenData"},
+        "publisher": {"@type": "Organization", "name": "BacenData", "url": "https://bacendata.com"},
+        "mainEntityOfPage": "https://bacendata.com/docs",
+        "about": {
+            "@type": "SoftwareApplication",
+            "name": "BacenData",
+            "applicationCategory": "DeveloperApplication",
+            "operatingSystem": "Cross-platform",
+            "offers": {"@type": "Offer", "price": "0", "priceCurrency": "BRL"}
+        }
+    }
+    </script>
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --blue-600: #2563eb;
+            --blue-700: #1d4ed8;
+            --blue-50: #eff6ff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --green-500: #22c55e;
+            --green-50: #f0fdf4;
+            --amber-500: #f59e0b;
+            --amber-50: #fffbeb;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--gray-800);
+            line-height: 1.7;
+            background: #fff;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { color: var(--blue-600); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        code, pre { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
+
+        /* Nav */
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--gray-200);
+        }
+        .nav-inner {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+        .nav-logo { font-size: 1.25rem; font-weight: 700; color: var(--gray-900); }
+        .nav-logo span { color: var(--blue-600); }
+        .nav-links { display: flex; align-items: center; gap: 32px; }
+        .nav-links a { font-size: 0.9rem; font-weight: 500; color: var(--gray-600); transition: color 0.2s; }
+        .nav-links a:hover { color: var(--gray-900); text-decoration: none; }
+        .nav-links a.active { color: var(--blue-600); }
+        .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px; font-size: 0.9rem; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+        .btn-outline { background: transparent; color: var(--gray-700); border: 1px solid var(--gray-200); }
+        .btn-outline:hover { background: var(--gray-50); text-decoration: none; }
+
+        /* Layout */
+        .docs-layout {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            gap: 48px;
+            align-items: start;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: sticky;
+            top: 88px;
+            padding: 24px 0;
+            max-height: calc(100vh - 88px);
+            overflow-y: auto;
+        }
+        .sidebar h4 {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gray-400);
+            margin-bottom: 12px;
+            margin-top: 24px;
+        }
+        .sidebar h4:first-child { margin-top: 0; }
+        .sidebar a {
+            display: block;
+            padding: 5px 0;
+            font-size: 0.88rem;
+            color: var(--gray-500);
+            transition: color 0.15s;
+        }
+        .sidebar a:hover { color: var(--gray-900); text-decoration: none; }
+
+        /* Content */
+        .docs-content {
+            padding: 32px 0 80px;
+            min-width: 0;
+        }
+        .docs-content h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--gray-900);
+            margin-bottom: 12px;
+        }
+        .docs-content h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-top: 48px;
+            margin-bottom: 16px;
+            padding-top: 24px;
+            border-top: 1px solid var(--gray-200);
+        }
+        .docs-content h2:first-of-type { margin-top: 32px; border-top: none; padding-top: 0; }
+        .docs-content h3 {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--gray-800);
+            margin-top: 32px;
+            margin-bottom: 12px;
+        }
+        .docs-content > p,
+        .docs-content > ul,
+        .docs-content > ol {
+            margin-bottom: 16px;
+            color: var(--gray-600);
+        }
+        .docs-content li { margin-bottom: 6px; }
+        .docs-content ul { padding-left: 20px; }
+        .lead {
+            font-size: 1.1rem;
+            color: var(--gray-500);
+            margin-bottom: 32px;
+        }
+
+        /* Code blocks */
+        .code-block {
+            background: var(--gray-900);
+            border-radius: 10px;
+            margin: 16px 0 24px;
+            overflow: hidden;
+        }
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .code-lang {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gray-400);
+        }
+        .code-copy {
+            font-size: 0.75rem;
+            color: var(--gray-400);
+            background: none;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 3px 10px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+        .code-copy:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+        .code-block pre {
+            padding: 16px 20px;
+            color: #e5e7eb;
+            font-size: 0.87rem;
+            line-height: 1.7;
+            overflow-x: auto;
+        }
+        .code-block .comment { color: #6b7280; }
+        .code-block .keyword { color: #c084fc; }
+        .code-block .string { color: #86efac; }
+        .code-block .func { color: #93c5fd; }
+        .code-block .number { color: #fbbf24; }
+
+        /* Inline code */
+        .docs-content code:not(pre code) {
+            background: var(--gray-100);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            color: var(--gray-800);
+        }
+
+        /* Tables */
+        .docs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0 24px;
+            font-size: 0.9rem;
+        }
+        .docs-table th {
+            text-align: left;
+            padding: 10px 14px;
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            font-weight: 600;
+            color: var(--gray-700);
+            font-size: 0.82rem;
+        }
+        .docs-table td {
+            padding: 10px 14px;
+            border: 1px solid var(--gray-200);
+            color: var(--gray-600);
+        }
+        .docs-table code {
+            background: var(--gray-100);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 0.82em;
+        }
+
+        /* Callouts */
+        .callout {
+            padding: 16px 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 0.9rem;
+        }
+        .callout-info {
+            background: var(--blue-50);
+            border-left: 4px solid var(--blue-600);
+            color: var(--gray-700);
+        }
+        .callout-tip {
+            background: var(--green-50);
+            border-left: 4px solid var(--green-500);
+            color: var(--gray-700);
+        }
+        .callout-warn {
+            background: var(--amber-50);
+            border-left: 4px solid var(--amber-500);
+            color: var(--gray-700);
+        }
+        .callout strong { display: block; margin-bottom: 4px; }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            border-top: 1px solid var(--gray-200);
+            text-align: center;
+            color: var(--gray-400);
+            font-size: 0.85rem;
+        }
+        footer a { color: var(--gray-500); }
+        .footer-links { display: flex; gap: 24px; justify-content: center; margin-bottom: 12px; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .docs-layout { grid-template-columns: 1fr; gap: 0; }
+            .sidebar { position: static; max-height: none; padding: 16px 0; border-bottom: 1px solid var(--gray-200); }
+            .docs-content h1 { font-size: 1.7rem; }
+            .nav-links a.hide-mobile { display: none; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">📊 Bacen<span>Data</span></a>
+            <div class="nav-links">
+                <a href="/" class="hide-mobile">Home</a>
+                <a href="/docs" class="active">Docs</a>
+                <a href="/#pricing">Planos</a>
+                <a href="https://bacendata.streamlit.app" target="_blank" class="hide-mobile">Dashboard</a>
+                <a href="https://bacendata-production.up.railway.app/docs" target="_blank">API Ref</a>
+                <a href="https://github.com/fmaignacio/bacendata" target="_blank" class="btn btn-outline">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h4>Primeiros passos</h4>
+            <a href="#instalacao">Instalacao</a>
+            <a href="#quickstart">Quickstart</a>
+
+            <h4>Wrapper Python</h4>
+            <a href="#serie-unica">Serie unica</a>
+            <a href="#multiplas-series">Multiplas series</a>
+            <a href="#catalogo">Catalogo de series</a>
+            <a href="#cache">Cache local</a>
+            <a href="#async">Interface async</a>
+            <a href="#metadados">Metadados</a>
+            <a href="#erros">Tratamento de erros</a>
+
+            <h4>API REST</h4>
+            <a href="#api-overview">Visao geral</a>
+            <a href="#autenticacao">Autenticacao</a>
+            <a href="#endpoints">Endpoints</a>
+            <a href="#rate-limiting">Rate limiting</a>
+
+            <h4>Casos de uso</h4>
+            <a href="#economista">Economistas</a>
+            <a href="#fintech">Fintechs</a>
+            <a href="#analista">Analistas de credito</a>
+            <a href="#pesquisador">Pesquisadores</a>
+        </aside>
+
+        <!-- Content -->
+        <main class="docs-content">
+            <h1>Documentacao BacenData</h1>
+            <p class="lead">
+                Acesse dados do Banco Central do Brasil em 1 linha de Python.
+                Wrapper com paginacao automatica, cache inteligente e API REST pronta para producao.
+            </p>
+
+            <div class="callout callout-info">
+                <strong>Por que BacenData?</strong>
+                Desde marco/2025, a API SGS do BACEN limita consultas a 10 anos.
+                O BacenData resolve isso com paginacao automatica e transparente — consulte 30, 40, 50 anos de dados sem se preocupar.
+            </div>
+
+            <!-- ==================== INSTALACAO ==================== -->
+            <h2 id="instalacao">Instalacao</h2>
+
+            <h3>Wrapper Python (biblioteca)</h3>
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Terminal</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre>pip install bacendata</pre>
+            </div>
+
+            <h3>API REST (servidor local)</h3>
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Terminal</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre>pip install "bacendata[api]"
+uvicorn bacendata.api.app:create_app --factory --reload --port 8000</pre>
+            </div>
+
+            <p>Acesse <code>http://localhost:8000/docs</code> para a documentacao interativa Swagger.</p>
+
+            <!-- ==================== QUICKSTART ==================== -->
+            <h2 id="quickstart">Quickstart</h2>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Python</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="keyword">from</span> bacendata <span class="keyword">import</span> sgs
+
+<span class="comment"># Buscar Selic por nome do catalogo</span>
+selic = sgs.<span class="func">get</span>(<span class="string">"selic"</span>, start=<span class="string">"2024-01-01"</span>)
+
+<span class="comment"># Buscar IPCA por codigo SGS</span>
+ipca = sgs.<span class="func">get</span>(<span class="number">433</span>, last=<span class="number">12</span>)
+
+<span class="comment"># Buscar multiplas series de uma vez</span>
+df = sgs.<span class="func">get</span>({<span class="string">"Selic"</span>: <span class="number">11</span>, <span class="string">"IPCA"</span>: <span class="number">433</span>, <span class="string">"Dolar"</span>: <span class="number">1</span>}, start=<span class="string">"2020-01-01"</span>)
+
+<span class="comment"># Retorno: pandas DataFrame pronto para analise</span>
+<span class="func">print</span>(selic)
+<span class="comment">#              valor</span>
+<span class="comment"># data</span>
+<span class="comment"># 2024-01-02   11.65</span>
+<span class="comment"># 2024-01-03   11.65</span>
+<span class="comment"># ...</span></pre>
+            </div>
+
+            <div class="callout callout-tip">
+                <strong>Dica</strong>
+                O retorno e sempre um <code>pandas.DataFrame</code> com indice <code>data</code> e coluna <code>valor</code>.
+                Facil de exportar para CSV, Excel ou plotar graficos.
+            </div>
+
+            <!-- ==================== SERIE UNICA ==================== -->
+            <h2 id="serie-unica">Consultar serie unica</h2>
+
+            <p>Use <code>sgs.get()</code> com codigo numerico ou nome do catalogo:</p>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Python</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="keyword">from</span> bacendata <span class="keyword">import</span> sgs
+
+<span class="comment"># Por codigo SGS</span>
+selic = sgs.<span class="func">get</span>(<span class="number">11</span>, start=<span class="string">"2024-01-01"</span>)
+
+<span class="comment"># Por nome do catalogo</span>
+selic = sgs.<span class="func">get</span>(<span class="string">"selic"</span>, start=<span class="string">"2024-01-01"</span>)
+
+<span class="comment"># Com data de inicio e fim</span>
+selic = sgs.<span class="func">get</span>(<span class="number">11</span>, start=<span class="string">"2024-01-01"</span>, end=<span class="string">"2024-06-30"</span>)
+
+<span class="comment"># Ultimos N valores</span>
+ipca = sgs.<span class="func">get</span>(<span class="number">433</span>, last=<span class="number">12</span>)
+
+<span class="comment"># Paginacao automatica para periodos > 10 anos</span>
+historico = sgs.<span class="func">get</span>(<span class="number">11</span>, start=<span class="string">"2000-01-01"</span>, end=<span class="string">"2024-12-31"</span>)</pre>
+            </div>
+
+            <table class="docs-table">
+                <thead>
+                    <tr><th>Parametro</th><th>Tipo</th><th>Descricao</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><code>codigo</code></td><td><code>int</code> ou <code>str</code></td><td>Codigo SGS ou nome do catalogo (ex: <code>11</code> ou <code>"selic"</code>)</td></tr>
+                    <tr><td><code>start</code></td><td><code>str</code></td><td>Data inicial: <code>"2024-01-01"</code> ou <code>"01/01/2024"</code></td></tr>
+                    <tr><td><code>end</code></td><td><code>str</code></td><td>Data final (padrao: hoje)</td></tr>
+                    <tr><td><code>last</code></td><td><code>int</code></td><td>Ultimos N valores (ignora start/end)</td></tr>
+                </tbody>
+            </table>
+
+            <!-- ==================== MULTIPLAS SERIES ==================== -->
+            <h2 id="multiplas-series">Multiplas series</h2>
+
+            <p>Passe um <code>dict</code> para buscar varias series de uma vez. Cada chave vira o nome da coluna no DataFrame:</p>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Python</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="keyword">from</span> bacendata <span class="keyword">import</span> sgs
+
+df = sgs.<span class="func">get</span>(
+    {<span class="string">"Selic"</span>: <span class="number">11</span>, <span class="string">"IPCA"</span>: <span class="number">433</span>, <span class="string">"Dolar"</span>: <span class="number">1</span>},
+    start=<span class="string">"2020-01-01"</span>
+)
+
+<span class="func">print</span>(df.columns)
+<span class="comment"># Index(['Selic', 'IPCA', 'Dolar'], dtype='object')</span>
+
+<span class="comment"># Exportar para Excel</span>
+df.<span class="func">to_excel</span>(<span class="string">"indicadores_2020.xlsx"</span>)
+
+<span class="comment"># Plotar comparativo</span>
+df.<span class="func">plot</span>(subplots=<span class="keyword">True</span>, figsize=(<span class="number">12</span>, <span class="number">8</span>), title=<span class="string">"Indicadores 2020-2024"</span>)</pre>
+            </div>
+
+            <!-- ==================== CATALOGO ==================== -->
+            <h2 id="catalogo">Catalogo de series</h2>
+
+            <p>O BacenData inclui 14 series pre-configuradas que podem ser acessadas por nome ou alias:</p>
+
+            <table class="docs-table">
+                <thead>
+                    <tr><th>Codigo</th><th>Nome</th><th>Aliases</th><th>Periodicidade</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td>11</td><td>Selic diaria</td><td><code>selic</code>, <code>selic_diaria</code></td><td>Diaria</td></tr>
+                    <tr><td>433</td><td>IPCA</td><td><code>ipca</code>, <code>inflacao</code></td><td>Mensal</td></tr>
+                    <tr><td>1</td><td>Dolar (compra)</td><td><code>dolar</code>, <code>usd</code>, <code>ptax</code>, <code>cambio</code></td><td>Diaria</td></tr>
+                    <tr><td>21619</td><td>Euro (compra) PTAX</td><td><code>euro</code>, <code>eur</code></td><td>Diaria</td></tr>
+                    <tr><td>4390</td><td>Selic anualizada</td><td><code>selic_anual</code>, <code>selic_anualizada</code></td><td>Mensal</td></tr>
+                    <tr><td>12</td><td>Selic acumulada no mes</td><td><code>selic_mensal</code>, <code>selic_acumulada</code></td><td>Mensal</td></tr>
+                    <tr><td>4189</td><td>Juros PF</td><td><code>juros_pf</code>, <code>taxa_pf</code></td><td>Mensal</td></tr>
+                    <tr><td>25434</td><td>Juros Credito Livre</td><td><code>juros_credito</code>, <code>credito_livre</code></td><td>Mensal</td></tr>
+                    <tr><td>7326</td><td>Reservas Internacionais</td><td><code>reservas</code></td><td>Diaria</td></tr>
+                    <tr><td>20542</td><td>Saldo Credito Livre</td><td><code>saldo_credito</code>, <code>carteira_credito</code></td><td>Mensal</td></tr>
+                    <tr><td>21112</td><td>Inadimplencia PF</td><td><code>inadimplencia_pf</code>, <code>default_pf</code></td><td>Mensal</td></tr>
+                    <tr><td>21082</td><td>Inadimplencia PJ</td><td><code>inadimplencia_pj</code>, <code>default_pj</code></td><td>Mensal</td></tr>
+                    <tr><td>27574</td><td>Expectativa IPCA 12m</td><td><code>focus_ipca</code>, <code>expectativa_ipca</code></td><td>Semanal</td></tr>
+                    <tr><td>27575</td><td>Expectativa Selic</td><td><code>focus_selic</code>, <code>expectativa_selic</code></td><td>Semanal</td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout callout-info">
+                <strong>Qualquer codigo SGS funciona</strong>
+                O catalogo e um atalho. Voce pode usar qualquer codigo SGS valido: <code>sgs.get(4389, last=10)</code> busca o CDI, por exemplo.
+            </div>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Python</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="comment"># Listar todas as series do catalogo</span>
+<span class="keyword">from</span> bacendata.wrapper.catalogo <span class="keyword">import</span> listar
+
+<span class="keyword">for</span> serie <span class="keyword">in</span> <span class="func">listar</span>():
+    <span class="func">print</span>(<span class="keyword">f</span><span class="string">"{serie.codigo:>6} | {serie.nome} ({serie.periodicidade})"</span>)</pre>
+            </div>
+
+            <!-- ==================== CACHE ==================== -->
+            <h2 id="cache">Cache local</h2>
+
+            <p>Ative o cache para evitar chamadas repetidas a API do BACEN. O cache usa SQLite com TTL por periodicidade:</p>
+
+            <table class="docs-table">
+                <thead><tr><th>Periodicidade</th><th>TTL</th></tr></thead>
+                <tbody>
+                    <tr><td>Diaria</td><td>1 hora</td></tr>
+                    <tr><td>Semanal</td><td>6 horas</td></tr>
+                    <tr><td>Mensal</td><td>24 horas</td></tr>
+                </tbody>
+            </table>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Python</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="keyword">from</span> bacendata <span class="keyword">import</span> sgs
+
+sgs.cache.<span class="func">ativar</span>()  <span class="comment"># Salva em ~/.bacendata/cache.db</span>
+
+selic = sgs.<span class="func">get</span>(<span class="number">11</span>, start=<span class="string">"2020-01-01"</span>)  <span class="comment"># Busca na API</span>
+selic = sgs.<span class="func">get</span>(<span class="number">11</span>, start=<span class="string">"2020-01-01"</span>)  <span class="comment"># Le do cache (instantaneo)</span>
+
+<span class="comment"># Caminho customizado</span>
+sgs.cache.<span class="func">ativar</span>(<span class="string">"/tmp/meu_cache.db"</span>)
+
+<span class="comment"># Limpar cache</span>
+sgs.cache.<span class="func">limpar</span>()
+
+<span class="comment"># Desativar</span>
+sgs.cache.<span class="func">desativar</span>()</pre>
+            </div>
+
+            <!-- ==================== ASYNC ==================== -->
+            <h2 id="async">Interface async</h2>
+
+            <p>Para uso em FastAPI ou outros frameworks async, use <code>sgs.aget()</code>:</p>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Python</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="keyword">import</span> asyncio
+<span class="keyword">from</span> bacendata <span class="keyword">import</span> sgs
+
+<span class="keyword">async def</span> <span class="func">main</span>():
+    <span class="comment"># Mesma interface, mas await</span>
+    df = <span class="keyword">await</span> sgs.<span class="func">aget</span>(<span class="number">11</span>, start=<span class="string">"2024-01-01"</span>)
+    meta = <span class="keyword">await</span> sgs.<span class="func">ametadata</span>(<span class="number">433</span>)
+    <span class="func">print</span>(df)
+
+asyncio.<span class="func">run</span>(main())</pre>
+            </div>
+
+            <!-- ==================== METADADOS ==================== -->
+            <h2 id="metadados">Metadados</h2>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Python</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre>info = sgs.<span class="func">metadata</span>(<span class="number">433</span>)
+<span class="func">print</span>(info)
+<span class="comment"># {'codigo': 433, 'nome': 'IPCA - Variacao mensal',</span>
+<span class="comment">#  'periodicidade': 'Mensal', 'unidade': '% a.m.', ...}</span></pre>
+            </div>
+
+            <!-- ==================== ERROS ==================== -->
+            <h2 id="erros">Tratamento de erros</h2>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Python</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="keyword">from</span> bacendata.wrapper.exceptions <span class="keyword">import</span> (
+    SerieNaoEncontrada,
+    BacenAPIError,
+    BacenTimeoutError,
+    ParametrosInvalidos,
+)
+
+<span class="keyword">try</span>:
+    df = sgs.<span class="func">get</span>(<span class="number">99999</span>, start=<span class="string">"2024-01-01"</span>)
+<span class="keyword">except</span> SerieNaoEncontrada:
+    <span class="func">print</span>(<span class="string">"Serie nao existe"</span>)
+<span class="keyword">except</span> BacenTimeoutError:
+    <span class="func">print</span>(<span class="string">"API do BACEN nao respondeu"</span>)
+<span class="keyword">except</span> BacenAPIError <span class="keyword">as</span> e:
+    <span class="func">print</span>(<span class="keyword">f</span><span class="string">"Erro {e.status_code}: {e.mensagem}"</span>)</pre>
+            </div>
+
+            <!-- ==================== API REST ==================== -->
+            <h2 id="api-overview">API REST — Visao geral</h2>
+
+            <p>A BacenData API e uma interface REST que roda sobre o wrapper Python. Base URL de producao:</p>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">URL</span></div>
+                <pre>https://bacendata-production.up.railway.app</pre>
+            </div>
+
+            <p>Documentacao interativa: <a href="https://bacendata-production.up.railway.app/docs" target="_blank">/docs (Swagger)</a> | <a href="https://bacendata-production.up.railway.app/redoc" target="_blank">/redoc</a></p>
+
+            <!-- ==================== AUTENTICACAO ==================== -->
+            <h2 id="autenticacao">Autenticacao</h2>
+
+            <p>Envie sua API key via header <code>X-API-Key</code>:</p>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">cURL</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="comment"># Sem autenticacao (plano free: 100 req/dia)</span>
+curl "https://bacendata-production.up.railway.app/api/v1/series/selic?last=5"
+
+<span class="comment"># Com API key (plano pro: 10.000 req/dia)</span>
+curl -H "X-API-Key: sua-chave-pro" \
+     "https://bacendata-production.up.railway.app/api/v1/series/selic?last=5"</pre>
+            </div>
+
+            <!-- ==================== ENDPOINTS ==================== -->
+            <h2 id="endpoints">Endpoints</h2>
+
+            <h3>GET /api/v1/series/{codigo}</h3>
+            <p>Busca dados de uma serie temporal.</p>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">cURL</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="comment"># Por codigo</span>
+curl "https://bacendata-production.up.railway.app/api/v1/series/11?start=2024-01-01&end=2024-06-30"
+
+<span class="comment"># Por nome</span>
+curl "https://bacendata-production.up.railway.app/api/v1/series/selic?start=2024-01-01"
+
+<span class="comment"># Ultimos N valores</span>
+curl "https://bacendata-production.up.railway.app/api/v1/series/433?last=12"</pre>
+            </div>
+
+            <h3>POST /api/v1/series/bulk</h3>
+            <p>Busca ate 20 series em uma unica requisicao.</p>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">cURL</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre>curl -X POST "https://bacendata-production.up.railway.app/api/v1/series/bulk" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "series": [
+      {"codigo": 11, "nome": "Selic"},
+      {"codigo": 433, "nome": "IPCA"},
+      {"codigo": "dolar", "nome": "USD/BRL"}
+    ],
+    "start": "2024-01-01"
+  }'</pre>
+            </div>
+
+            <h3>GET /api/v1/catalogo</h3>
+            <p>Lista todas as 14 series do catalogo com aliases.</p>
+
+            <h3>GET /api/v1/catalogo/search?q={termo}</h3>
+            <p>Busca series por nome, descricao ou alias.</p>
+
+            <h3>GET /api/v1/series/{codigo}/metadata</h3>
+            <p>Retorna metadados de uma serie (nome, periodicidade, fonte, unidade).</p>
+
+            <!-- ==================== RATE LIMITING ==================== -->
+            <h2 id="rate-limiting">Rate limiting</h2>
+
+            <table class="docs-table">
+                <thead><tr><th>Plano</th><th>Limite</th><th>Preco</th></tr></thead>
+                <tbody>
+                    <tr><td>Free (sem API key)</td><td>100 req/dia</td><td>R$ 0</td></tr>
+                    <tr><td>Pro (com API key)</td><td>10.000 req/dia</td><td>R$ 79/mes</td></tr>
+                    <tr><td>Enterprise</td><td>Ilimitado</td><td>R$ 399/mes</td></tr>
+                </tbody>
+            </table>
+
+            <p>Headers de rate limit retornados em cada resposta:</p>
+            <ul>
+                <li><code>X-RateLimit-Limit</code> — limite total por dia</li>
+                <li><code>X-RateLimit-Remaining</code> — requisicoes restantes</li>
+                <li><code>Retry-After</code> — segundos ate resetar (quando excedido)</li>
+            </ul>
+
+            <!-- ==================== CASOS DE USO ==================== -->
+            <h2 id="economista">Caso de uso: Economistas</h2>
+            <p>Acompanhe inflacao, juros e expectativas do mercado:</p>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Python</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="keyword">from</span> bacendata <span class="keyword">import</span> sgs
+
+<span class="comment"># IPCA dos ultimos 24 meses</span>
+ipca = sgs.<span class="func">get</span>(<span class="string">"ipca"</span>, last=<span class="number">24</span>)
+
+<span class="comment"># Expectativas Focus: IPCA e Selic</span>
+focus = sgs.<span class="func">get</span>({
+    <span class="string">"IPCA esperado"</span>: <span class="number">27574</span>,
+    <span class="string">"Selic esperada"</span>: <span class="number">27575</span>,
+}, last=<span class="number">52</span>)
+
+<span class="comment"># Selic historica desde 2003</span>
+selic = sgs.<span class="func">get</span>(<span class="string">"selic_anual"</span>, start=<span class="string">"2003-01-01"</span>)
+selic[<span class="string">"valor"</span>].<span class="func">plot</span>(title=<span class="string">"Meta Selic 2003-2024"</span>, figsize=(<span class="number">12</span>,<span class="number">5</span>))</pre>
+            </div>
+
+            <h2 id="fintech">Caso de uso: Fintechs</h2>
+            <p>Integre cotacoes de cambio e juros na sua aplicacao:</p>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Python</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="keyword">import</span> httpx
+
+API = <span class="string">"https://bacendata-production.up.railway.app/api/v1"</span>
+KEY = <span class="string">"sua-chave-pro"</span>
+
+<span class="comment"># Dolar e Euro atuais</span>
+resp = httpx.<span class="func">post</span>(
+    <span class="keyword">f</span><span class="string">"{API}/series/bulk"</span>,
+    headers={<span class="string">"X-API-Key"</span>: KEY},
+    json={
+        <span class="string">"series"</span>: [
+            {<span class="string">"codigo"</span>: <span class="string">"dolar"</span>, <span class="string">"nome"</span>: <span class="string">"USD"</span>},
+            {<span class="string">"codigo"</span>: <span class="string">"euro"</span>, <span class="string">"nome"</span>: <span class="string">"EUR"</span>},
+        ],
+        <span class="string">"last"</span>: <span class="number">1</span>,
+    }
+)
+
+<span class="keyword">for</span> s <span class="keyword">in</span> resp.<span class="func">json</span>()[<span class="string">"series"</span>]:
+    <span class="func">print</span>(<span class="keyword">f</span><span class="string">"{s['nome']}: R$ {s['dados'][0]['valor']:.4f}"</span>)</pre>
+            </div>
+
+            <h2 id="analista">Caso de uso: Analistas de credito</h2>
+            <p>Monitore inadimplencia e juros do mercado de credito:</p>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Python</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="keyword">from</span> bacendata <span class="keyword">import</span> sgs
+
+credito = sgs.<span class="func">get</span>({
+    <span class="string">"Inadimplencia PF"</span>: <span class="number">21112</span>,
+    <span class="string">"Inadimplencia PJ"</span>: <span class="number">21082</span>,
+    <span class="string">"Juros PF"</span>: <span class="number">4189</span>,
+    <span class="string">"Saldo Credito"</span>: <span class="number">20542</span>,
+}, start=<span class="string">"2019-01-01"</span>)
+
+credito.<span class="func">plot</span>(subplots=<span class="keyword">True</span>, figsize=(<span class="number">14</span>,<span class="number">10</span>), title=<span class="string">"Painel de Credito"</span>)</pre>
+            </div>
+
+            <h2 id="pesquisador">Caso de uso: Pesquisadores</h2>
+            <p>Baixe series historicas longas com paginacao automatica:</p>
+
+            <div class="code-block">
+                <div class="code-header"><span class="code-lang">Python</span><button class="code-copy" onclick="copyCode(this)">Copiar</button></div>
+                <pre><span class="keyword">from</span> bacendata <span class="keyword">import</span> sgs
+
+<span class="comment"># Selic desde 1986 (quase 40 anos — paginacao automatica)</span>
+selic = sgs.<span class="func">get</span>(<span class="number">11</span>, start=<span class="string">"1986-06-01"</span>)
+<span class="func">print</span>(<span class="keyword">f</span><span class="string">"Total: {len(selic)} registros"</span>)
+
+<span class="comment"># IPCA desde 1980</span>
+ipca = sgs.<span class="func">get</span>(<span class="number">433</span>, start=<span class="string">"1980-01-01"</span>)
+
+<span class="comment"># Exportar tudo para Excel</span>
+selic.<span class="func">to_excel</span>(<span class="string">"selic_historico.xlsx"</span>)
+ipca.<span class="func">to_excel</span>(<span class="string">"ipca_historico.xlsx"</span>)</pre>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div style="max-width:1120px;margin:0 auto;padding:0 24px;">
+            <div class="footer-links">
+                <a href="https://pypi.org/project/bacendata/" target="_blank">PyPI</a>
+                <a href="https://github.com/fmaignacio/bacendata" target="_blank">GitHub</a>
+                <a href="https://bacendata.streamlit.app" target="_blank">Dashboard</a>
+                <a href="https://bacendata-production.up.railway.app/docs" target="_blank">API Docs</a>
+                <a href="mailto:contato@bacendata.com">Contato</a>
+            </div>
+            <p>&copy; 2026 BacenData. Dados abertos do Banco Central do Brasil, simplificados.</p>
+        </div>
+    </footer>
+
+    <script>
+    function copyCode(btn) {
+        const pre = btn.closest('.code-block').querySelector('pre');
+        const text = pre.textContent;
+        navigator.clipboard.writeText(text).then(function() {
+            btn.textContent = 'Copiado!';
+            setTimeout(function() { btn.textContent = 'Copiar'; }, 2000);
+        });
+    }
+    </script>
+<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "02d434802b784fa892ba21f7acb730f7"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>

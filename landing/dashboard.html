@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — BacenData</title>
+    <meta name="description" content="Dashboard do usuário BacenData. Veja seu plano, uso da API, API key e estatísticas.">
+    <meta name="robots" content="noindex">
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --blue-600: #2563eb;
+            --blue-700: #1d4ed8;
+            --blue-50: #eff6ff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --green-500: #22c55e;
+            --green-50: #f0fdf4;
+            --green-600: #16a34a;
+            --amber-500: #f59e0b;
+            --amber-50: #fffbeb;
+            --red-500: #ef4444;
+            --red-50: #fef2f2;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            color: var(--gray-800);
+            line-height: 1.6;
+            background: var(--gray-50);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        a { color: var(--blue-600); text-decoration: none; }
+
+        code { font-family: 'JetBrains Mono', monospace; }
+
+        /* Nav */
+        nav {
+            background: #fff;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        .nav-inner {
+            max-width: 1120px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 64px;
+        }
+        .nav-logo { font-size: 1.25rem; font-weight: 700; color: var(--gray-900); }
+        .nav-logo span { color: var(--blue-600); }
+        .nav-links { display: flex; align-items: center; gap: 24px; }
+        .nav-links a { font-size: 0.9rem; font-weight: 500; color: var(--gray-600); }
+        .nav-links a:hover { color: var(--gray-900); }
+        .nav-links a.active { color: var(--blue-600); }
+
+        /* Container */
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 32px 24px 80px;
+        }
+
+        /* Login form */
+        .login-card {
+            max-width: 480px;
+            margin: 80px auto;
+            background: #fff;
+            border: 1px solid var(--gray-200);
+            border-radius: 16px;
+            padding: 40px;
+            text-align: center;
+        }
+        .login-card h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        .login-card p {
+            color: var(--gray-500);
+            margin-bottom: 24px;
+            font-size: 0.9rem;
+        }
+        .login-card .input-group {
+            display: flex;
+            gap: 8px;
+        }
+        .login-card input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .login-card input:focus { outline: 2px solid var(--blue-600); outline-offset: -1px; }
+        .login-card .error {
+            color: var(--red-500);
+            font-size: 0.85rem;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .btn-primary { background: var(--blue-600); color: #fff; }
+        .btn-primary:hover { background: var(--blue-700); }
+        .btn-sm { padding: 6px 14px; font-size: 0.82rem; }
+        .btn-outline { background: #fff; color: var(--gray-700); border: 1px solid var(--gray-300); }
+        .btn-outline:hover { background: var(--gray-50); }
+
+        /* Dashboard content */
+        .dash-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .dash-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: #fff;
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .stat-card .stat-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .stat-card .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        .stat-card .stat-sub {
+            font-size: 0.8rem;
+            color: var(--gray-400);
+            margin-top: 2px;
+        }
+
+        /* Sections */
+        .section {
+            background: #fff;
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .section h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--gray-900);
+        }
+
+        /* API Key display */
+        .key-display {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--gray-900);
+            border-radius: 8px;
+            padding: 14px 18px;
+        }
+        .key-display code {
+            flex: 1;
+            color: #e5e7eb;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+        }
+        .key-display .btn-copy {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            color: var(--gray-400);
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: 500;
+            transition: all 0.15s;
+        }
+        .key-display .btn-copy:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+        .key-toggle {
+            background: none;
+            border: none;
+            color: var(--gray-400);
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 4px;
+        }
+        .key-toggle:hover { color: #fff; }
+
+        /* Plan badge */
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-pro { background: var(--blue-50); color: var(--blue-600); }
+        .badge-enterprise { background: var(--amber-50); color: var(--amber-500); }
+        .badge-free { background: var(--gray-100); color: var(--gray-500); }
+
+        /* Usage bar */
+        .usage-bar-container {
+            margin-top: 12px;
+        }
+        .usage-bar-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: var(--gray-500);
+            margin-bottom: 6px;
+        }
+        .usage-bar {
+            height: 8px;
+            background: var(--gray-100);
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .usage-bar-fill {
+            height: 100%;
+            border-radius: 999px;
+            background: var(--blue-600);
+            transition: width 0.5s ease;
+        }
+        .usage-bar-fill.warn { background: var(--amber-500); }
+        .usage-bar-fill.danger { background: var(--red-500); }
+
+        /* Quick test */
+        .test-form {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .test-form select,
+        .test-form input {
+            padding: 10px 14px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-family: inherit;
+        }
+        .test-form select { width: 180px; }
+        .test-form input { flex: 1; }
+        .test-result {
+            background: var(--gray-900);
+            border-radius: 8px;
+            padding: 16px 18px;
+            color: #e5e7eb;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.82rem;
+            line-height: 1.6;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            display: none;
+        }
+
+        /* Table */
+        .endpoints-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .endpoints-table th {
+            text-align: left;
+            padding: 8px 12px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        .endpoints-table td {
+            padding: 10px 12px;
+            font-size: 0.88rem;
+            color: var(--gray-600);
+            border-bottom: 1px solid var(--gray-100);
+        }
+        .endpoints-table code {
+            background: var(--gray-100);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.82em;
+        }
+
+        /* Chart container */
+        .chart-container {
+            height: 180px;
+            display: flex;
+            align-items: flex-end;
+            gap: 4px;
+            padding-top: 12px;
+        }
+        .chart-bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .chart-bar {
+            width: 100%;
+            max-width: 48px;
+            background: var(--blue-600);
+            border-radius: 4px 4px 0 0;
+            min-height: 4px;
+            transition: height 0.3s ease;
+        }
+        .chart-label {
+            font-size: 0.7rem;
+            color: var(--gray-400);
+        }
+        .chart-value {
+            font-size: 0.72rem;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        /* Meta info */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .meta-item {
+            padding: 12px;
+            background: var(--gray-50);
+            border-radius: 8px;
+        }
+        .meta-item .meta-label {
+            font-size: 0.78rem;
+            color: var(--gray-400);
+            margin-bottom: 2px;
+        }
+        .meta-item .meta-value {
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--gray-800);
+        }
+
+        /* Hidden */
+        .hidden { display: none; }
+
+        /* Footer */
+        footer {
+            padding: 32px 0;
+            text-align: center;
+            color: var(--gray-400);
+            font-size: 0.82rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .meta-grid { grid-template-columns: 1fr; }
+            .test-form { flex-direction: column; }
+            .test-form select { width: 100%; }
+            .login-card .input-group { flex-direction: column; }
+            .dash-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-inner">
+            <a href="/" class="nav-logo">📊 Bacen<span>Data</span></a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/docs">Docs</a>
+                <a href="/dashboard" class="active">Dashboard</a>
+                <a href="https://bacendata-production.up.railway.app/docs" target="_blank">API Ref</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <div class="login-card">
+            <h1>Dashboard BacenData</h1>
+            <p>Insira sua API key para acessar o dashboard. A key foi enviada por email apos o pagamento.</p>
+            <div class="input-group">
+                <input type="text" id="api-key-input" placeholder="bcd_..." autocomplete="off" spellcheck="false">
+                <button class="btn btn-primary" onclick="login()">Entrar</button>
+            </div>
+            <p class="error" id="login-error"></p>
+            <p style="margin-top:24px;font-size:0.82rem;color:var(--gray-400);">
+                Ainda nao tem uma API key? <a href="/#pricing">Ver planos</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Dashboard (hidden until login) -->
+    <div id="dashboard-screen" class="hidden">
+        <div class="container">
+            <!-- Header -->
+            <div class="dash-header">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p style="color:var(--gray-500);font-size:0.9rem;" id="dash-email"></p>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <span class="badge" id="dash-badge"></span>
+                    <button class="btn btn-outline btn-sm" onclick="logout()">Sair</button>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Req. hoje</div>
+                    <div class="stat-value" id="stat-hoje">-</div>
+                    <div class="stat-sub" id="stat-limite"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Ultimos 7 dias</div>
+                    <div class="stat-value" id="stat-7d">-</div>
+                    <div class="stat-sub" id="stat-media-7d"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Ultimos 30 dias</div>
+                    <div class="stat-value" id="stat-30d">-</div>
+                    <div class="stat-sub" id="stat-media-30d"></div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Plano</div>
+                    <div class="stat-value" id="stat-plano" style="text-transform:capitalize;">-</div>
+                    <div class="stat-sub" id="stat-desde"></div>
+                </div>
+            </div>
+
+            <!-- Usage bar -->
+            <div class="section">
+                <h2>Uso diario</h2>
+                <div class="usage-bar-container">
+                    <div class="usage-bar-header">
+                        <span id="usage-label">0 / 10.000 requisicoes</span>
+                        <span id="usage-pct">0%</span>
+                    </div>
+                    <div class="usage-bar">
+                        <div class="usage-bar-fill" id="usage-fill" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Key -->
+            <div class="section">
+                <h2>Sua API key</h2>
+                <div class="key-display">
+                    <code id="key-display-value">bcd_••••••••••••••••••••••••</code>
+                    <button class="key-toggle" onclick="toggleKey()" id="key-toggle-btn" title="Mostrar/ocultar">&#128065;</button>
+                    <button class="btn-copy" onclick="copyKey()">Copiar</button>
+                </div>
+                <p style="margin-top:12px;font-size:0.82rem;color:var(--gray-400);">
+                    Use no header <code style="background:var(--gray-100);padding:2px 6px;border-radius:4px;font-size:0.82em;">X-API-Key</code> em suas requisicoes.
+                </p>
+            </div>
+
+            <!-- Usage chart -->
+            <div class="section">
+                <h2>Requisicoes por dia (ultimos 7 dias)</h2>
+                <div class="chart-container" id="usage-chart"></div>
+            </div>
+
+            <!-- Top endpoints -->
+            <div class="section">
+                <h2>Endpoints mais usados (30 dias)</h2>
+                <table class="endpoints-table">
+                    <thead><tr><th>Endpoint</th><th>Requisicoes</th></tr></thead>
+                    <tbody id="endpoints-body">
+                        <tr><td colspan="2" style="color:var(--gray-400);text-align:center;">Carregando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Quick test -->
+            <div class="section">
+                <h2>Testar a API</h2>
+                <div class="test-form">
+                    <select id="test-serie">
+                        <option value="selic">Selic</option>
+                        <option value="ipca">IPCA</option>
+                        <option value="dolar">Dolar</option>
+                        <option value="euro">Euro</option>
+                        <option value="focus_ipca">Focus IPCA</option>
+                        <option value="focus_selic">Focus Selic</option>
+                        <option value="inadimplencia_pf">Inadimplencia PF</option>
+                    </select>
+                    <input type="number" id="test-last" value="5" min="1" max="100" placeholder="Ultimos N">
+                    <button class="btn btn-primary btn-sm" onclick="testApi()">Buscar</button>
+                </div>
+                <div class="test-result" id="test-result"></div>
+            </div>
+
+            <!-- Account info -->
+            <div class="section">
+                <h2>Informacoes da conta</h2>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <div class="meta-label">Email</div>
+                        <div class="meta-value" id="meta-email">-</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Plano</div>
+                        <div class="meta-value" id="meta-plano">-</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Membro desde</div>
+                        <div class="meta-value" id="meta-desde">-</div>
+                    </div>
+                    <div class="meta-item">
+                        <div class="meta-label">Status</div>
+                        <div class="meta-value" id="meta-status">-</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2026 BacenData &middot; <a href="/">Home</a> &middot; <a href="/docs">Docs</a> &middot; <a href="mailto:contato@bacendata.com">Suporte</a></p>
+        </footer>
+    </div>
+
+    <script>
+    const API_BASE = 'https://bacendata-production.up.railway.app';
+    let currentKey = '';
+    let keyVisible = false;
+
+    // Check for saved key
+    (function() {
+        const saved = localStorage.getItem('bacendata_key');
+        if (saved) {
+            currentKey = saved;
+            loadDashboard();
+        }
+    })();
+
+    async function login() {
+        const input = document.getElementById('api-key-input');
+        const error = document.getElementById('login-error');
+        const key = input.value.trim();
+
+        if (!key) {
+            error.textContent = 'Insira sua API key.';
+            error.style.display = 'block';
+            return;
+        }
+
+        error.style.display = 'none';
+
+        try {
+            const resp = await fetch(API_BASE + '/api/v1/me', {
+                headers: { 'X-API-Key': key }
+            });
+
+            if (!resp.ok) {
+                error.textContent = 'API key invalida. Verifique e tente novamente.';
+                error.style.display = 'block';
+                return;
+            }
+
+            const data = await resp.json();
+            if (!data.autenticado) {
+                error.textContent = 'API key nao reconhecida.';
+                error.style.display = 'block';
+                return;
+            }
+
+            currentKey = key;
+            localStorage.setItem('bacendata_key', key);
+            loadDashboard();
+        } catch (e) {
+            error.textContent = 'Erro de conexao. Tente novamente.';
+            error.style.display = 'block';
+        }
+    }
+
+    function logout() {
+        currentKey = '';
+        localStorage.removeItem('bacendata_key');
+        document.getElementById('login-screen').classList.remove('hidden');
+        document.getElementById('dashboard-screen').classList.add('hidden');
+    }
+
+    async function loadDashboard() {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('dashboard-screen').classList.remove('hidden');
+
+        const headers = { 'X-API-Key': currentKey };
+
+        // Load /me and /usage in parallel
+        try {
+            const [meResp, usageResp] = await Promise.all([
+                fetch(API_BASE + '/api/v1/me', { headers }),
+                fetch(API_BASE + '/api/v1/usage', { headers }),
+            ]);
+
+            const me = await meResp.json();
+            const usage = await usageResp.json();
+
+            renderMe(me);
+            renderUsage(usage);
+        } catch (e) {
+            console.error('Erro ao carregar dashboard:', e);
+        }
+    }
+
+    function renderMe(data) {
+        // Email
+        const email = data.email || '-';
+        document.getElementById('dash-email').textContent = email;
+        document.getElementById('meta-email').textContent = email;
+
+        // Badge
+        const badge = document.getElementById('dash-badge');
+        const plano = data.plano || 'free';
+        badge.textContent = plano;
+        badge.className = 'badge badge-' + plano;
+
+        // Stats
+        const uso = data.uso || {};
+        document.getElementById('stat-hoje').textContent = formatNum(uso.hoje || 0);
+        document.getElementById('stat-limite').textContent = 'de ' + formatNum(uso.limite_diario || 0);
+        document.getElementById('stat-plano').textContent = plano;
+
+        // Meta info
+        document.getElementById('meta-plano').textContent = plano.charAt(0).toUpperCase() + plano.slice(1);
+        document.getElementById('meta-status').textContent = data.ativo ? 'Ativo' : 'Inativo';
+
+        if (data.criado_em) {
+            const d = new Date(data.criado_em);
+            const formatted = d.toLocaleDateString('pt-BR');
+            document.getElementById('meta-desde').textContent = formatted;
+            document.getElementById('stat-desde').textContent = 'desde ' + formatted;
+        }
+
+        // Usage bar
+        const limite = uso.limite_diario || 1;
+        const usado = uso.hoje || 0;
+        const pct = Math.min(100, (usado / limite) * 100);
+        document.getElementById('usage-label').textContent = formatNum(usado) + ' / ' + formatNum(limite) + ' requisicoes';
+        document.getElementById('usage-pct').textContent = pct.toFixed(1) + '%';
+        const fill = document.getElementById('usage-fill');
+        fill.style.width = pct + '%';
+        fill.className = 'usage-bar-fill' + (pct > 90 ? ' danger' : pct > 70 ? ' warn' : '');
+
+        // Key display
+        document.getElementById('key-display-value').textContent = data.api_key_preview || 'bcd_****...****';
+    }
+
+    function renderUsage(data) {
+        const uso = data.uso || {};
+
+        document.getElementById('stat-7d').textContent = formatNum(uso.ultimos_7_dias || 0);
+        document.getElementById('stat-30d').textContent = formatNum(uso.ultimos_30_dias || 0);
+
+        const avg7 = uso.ultimos_7_dias ? Math.round(uso.ultimos_7_dias / 7) : 0;
+        const avg30 = uso.ultimos_30_dias ? Math.round(uso.ultimos_30_dias / 30) : 0;
+        document.getElementById('stat-media-7d').textContent = 'media ' + formatNum(avg7) + '/dia';
+        document.getElementById('stat-media-30d').textContent = 'media ' + formatNum(avg30) + '/dia';
+
+        // Chart
+        renderChart(data.uso_diario || []);
+
+        // Top endpoints
+        renderEndpoints(data.top_endpoints || []);
+    }
+
+    function renderChart(dailyData) {
+        const container = document.getElementById('usage-chart');
+        container.innerHTML = '';
+
+        if (dailyData.length === 0) {
+            container.innerHTML = '<p style="color:var(--gray-400);font-size:0.85rem;margin:auto;">Nenhum dado de uso ainda.</p>';
+            return;
+        }
+
+        const maxVal = Math.max(...dailyData.map(d => d.total), 1);
+
+        dailyData.forEach(d => {
+            const height = Math.max(4, (d.total / maxVal) * 150);
+            const dayLabel = d.dia.split('-').slice(1).join('/');
+            const group = document.createElement('div');
+            group.className = 'chart-bar-group';
+            group.innerHTML =
+                '<div class="chart-value">' + d.total + '</div>' +
+                '<div class="chart-bar" style="height:' + height + 'px"></div>' +
+                '<div class="chart-label">' + dayLabel + '</div>';
+            container.appendChild(group);
+        });
+    }
+
+    function renderEndpoints(endpoints) {
+        const tbody = document.getElementById('endpoints-body');
+
+        if (endpoints.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="2" style="color:var(--gray-400);text-align:center;">Nenhum uso registrado ainda.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = endpoints.map(e =>
+            '<tr><td><code>' + escapeHtml(e.endpoint) + '</code></td><td>' + formatNum(e.total) + '</td></tr>'
+        ).join('');
+    }
+
+    function toggleKey() {
+        keyVisible = !keyVisible;
+        const el = document.getElementById('key-display-value');
+        if (keyVisible) {
+            el.textContent = currentKey;
+        } else {
+            el.textContent = currentKey.substring(0, 8) + '...' + currentKey.slice(-4);
+        }
+    }
+
+    function copyKey() {
+        navigator.clipboard.writeText(currentKey).then(() => {
+            const btn = document.querySelector('.key-display .btn-copy');
+            btn.textContent = 'Copiado!';
+            setTimeout(() => { btn.textContent = 'Copiar'; }, 2000);
+        });
+    }
+
+    async function testApi() {
+        const serie = document.getElementById('test-serie').value;
+        const last = document.getElementById('test-last').value || 5;
+        const result = document.getElementById('test-result');
+        result.style.display = 'block';
+        result.textContent = 'Buscando...';
+
+        try {
+            const resp = await fetch(
+                API_BASE + '/api/v1/series/' + serie + '?last=' + last,
+                { headers: { 'X-API-Key': currentKey } }
+            );
+            const data = await resp.json();
+            result.textContent = JSON.stringify(data, null, 2);
+        } catch (e) {
+            result.textContent = 'Erro: ' + e.message;
+        }
+    }
+
+    function formatNum(n) {
+        return n.toLocaleString('pt-BR');
+    }
+
+    function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    // Enter key to login
+    document.getElementById('api-key-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') login();
+    });
+    </script>
+<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "02d434802b784fa892ba21f7acb730f7"}'></script><!-- End Cloudflare Web Analytics -->
+</body>
+</html>

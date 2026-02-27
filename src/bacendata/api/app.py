@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from bacendata.api.middleware.rate_limit import RateLimitMiddleware
-from bacendata.api.routes import health, series, webhook
+from bacendata.api.routes import dashboard, health, series, webhook
 from bacendata.core.config import settings
 from bacendata.wrapper import cache
 
@@ -80,6 +80,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(series.router)
     app.include_router(webhook.router)
+    app.include_router(dashboard.router)
 
     # Ativar cache do wrapper se configurado
     if settings.cache_ativo:
