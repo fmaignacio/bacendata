@@ -47,3 +47,23 @@ class ParametrosInvalidos(BacenDataError):
 
     Ex: data_inicio após data_fim, código negativo, etc.
     """
+
+
+class RecursoNaoEncontrado(BacenDataError):
+    """Recurso OData não encontrado na API SICOR do BACEN.
+
+    Pode indicar nome de recurso inválido ou recurso descontinuado.
+    """
+
+    def __init__(self, recurso: str) -> None:
+        self.recurso = recurso
+        super().__init__(f"Recurso '{recurso}' não encontrado na API SICOR do BACEN.")
+
+
+class SicorTimeoutError(BacenDataError):
+    """Timeout ao consultar a API SICOR após todas as tentativas de retry."""
+
+    def __init__(self, recurso: str, tentativas: int) -> None:
+        self.recurso = recurso
+        self.tentativas = tentativas
+        super().__init__(f"Timeout ao consultar recurso '{recurso}' após {tentativas} tentativas.")

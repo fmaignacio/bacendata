@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 
 from bacendata.api.app import create_app
 from bacendata.wrapper import cache
+from bacendata.wrapper import sicor as sicor_wrapper
 from bacendata.wrapper.bacen_sgs import BASE_URL, ULTIMOS_URL
 
 # ============================================================================
@@ -603,3 +604,106 @@ class TestDashboard:
         for ep in data["top_endpoints"]:
             assert "endpoint" in ep
             assert "total" in ep
+
+
+# ============================================================================
+# SICOR — Crédito Rural
+# ============================================================================
+
+
+SICOR_RECURSO = "CusteioMunicipioProduto"
+SICOR_URL = f"{sicor_wrapper.BASE_URL}/{SICOR_RECURSO}"
+
+
+def _mock_sicor(registros: list) -> None:
+    """Helper: configura mock para um recurso do SICOR."""
+    respx.get(SICOR_URL).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "@odata.context": f"{sicor_wrapper.BASE_URL}/$metadata#{SICOR_RECURSO}",
+                "value": registros,
+            },
+        )
+    )
+
+
+DADOS_SICOR = [
+    {"AnoEmissao": 2023, "cdMunicipio": 3550308, "VlCusteio": 1500.75},
+    {"AnoEmissao": 2023, "cdMunicipio": 3304557, "VlCusteio": 2300.00},
+]
+
+
+class TestSicor:
+    def test_listar_recursos(self, client: TestClient) -> None:
+        """GET /api/v1/sicor/recursos lista os recursos conhecidos."""
+        response = client.get("/api/v1/sicor/recursos")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["total"] >= 1
+        nomes = [r["nome"] for r in data["recursos"]]
+        assert SICOR_RECURSO in nomes
+
+    @respx.mock
+    def test_consultar_recurso(self, client: TestClient) -> None:
+        """GET /api/v1/sicor/{recurso} retorna os registros do SICOR."""
+        _mock_sicor(DADOS_SICOR)
+
+        response = client.get(f"/api/v1/sicor/{SICOR_RECURSO}?limit=2")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["recurso"] == SICOR_RECURSO
+        assert data["total"] == 2
+        assert data["colunas"] == ["AnoEmissao", "cdMunicipio", "VlCusteio"]
+        assert data["dados"][0]["cdMunicipio"] == 3550308
+
+    @respx.mock
+    def test_consultar_recurso_com_filtro(self, client: TestClient) -> None:
+        """O parâmetro filtro é repassado como $filter para a API do BACEN."""
+        _mock_sicor(DADOS_SICOR)
+
+        response = client.get(f"/api/v1/sicor/{SICOR_RECURSO}?limit=2&filtro=AnoEmissao eq 2023")
+        assert response.status_code == 200
+
+        chamada = respx.calls[0].request
+        assert chamada.url.params["$filter"] == "AnoEmissao eq 2023"
+
+    @respx.mock
+    def test_recurso_inexistente_retorna_404(self, client: TestClient) -> None:
+        """Recurso desconhecido no BACEN vira 404 na nossa API."""
+        respx.get(f"{sicor_wrapper.BASE_URL}/NaoExiste").mock(return_value=httpx.Response(404))
+
+        response = client.get("/api/v1/sicor/NaoExiste?limit=1")
+        assert response.status_code == 404
+
+    @respx.mock
+    def test_erro_do_bacen_vira_502(self, client: TestClient) -> None:
+        """Erro 400 da API do BACEN (ex: filtro inválido) vira 502."""
+        respx.get(SICOR_URL).mock(return_value=httpx.Response(400, text="filtro inválido"))
+
+        response = client.get(f"/api/v1/sicor/{SICOR_RECURSO}?limit=1")
+        assert response.status_code == 502
+
+    def test_limit_acima_do_teto_rejeitado(self, client: TestClient) -> None:
+        """limit acima do teto é rejeitado pela validação do FastAPI."""
+        response = client.get(f"/api/v1/sicor/{SICOR_RECURSO}?limit=999999")
+        assert response.status_code == 422
+
+    def test_limit_zero_rejeitado(self, client: TestClient) -> None:
+        response = client.get(f"/api/v1/sicor/{SICOR_RECURSO}?limit=0")
+        assert response.status_code == 422
+
+    @respx.mock
+    def test_colunas_do_recurso(self, client: TestClient) -> None:
+        """GET /api/v1/sicor/{recurso}/colunas inspeciona o schema."""
+        _mock_sicor(DADOS_SICOR[:1])
+
+        response = client.get(f"/api/v1/sicor/{SICOR_RECURSO}/colunas")
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["recurso"] == SICOR_RECURSO
+        assert data["colunas"] == ["AnoEmissao", "cdMunicipio", "VlCusteio"]
+        assert data["total"] == 3

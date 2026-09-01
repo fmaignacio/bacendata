@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from bacendata.api.middleware.rate_limit import RateLimitMiddleware
-from bacendata.api.routes import dashboard, health, series, webhook
+from bacendata.api.routes import dashboard, health, series, sicor, webhook
 from bacendata.core.config import settings
 from bacendata.wrapper import cache
 
@@ -56,12 +56,13 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
         description=(
-            "API REST para acesso simplificado aos dados do Banco Central do Brasil (SGS).\n\n"
+            "API REST para acesso simplificado aos dados do Banco Central do Brasil.\n\n"
             "**Funcionalidades:**\n"
-            "- Consulta de séries temporais por código ou nome\n"
+            "- Consulta de séries temporais do SGS por código ou nome\n"
             "- Paginação automática para consultas >10 anos\n"
             "- Catálogo de 14 séries populares com aliases\n"
             "- Consulta bulk de múltiplas séries\n"
+            "- Dados de crédito rural do SICOR com paginação automática\n"
             "- Rate limiting por API key\n\n"
             "**Planos:**\n"
             f"- Free: {settings.rate_limit_free} req/dia\n"
@@ -79,6 +80,7 @@ def create_app() -> FastAPI:
     # Rotas
     app.include_router(health.router)
     app.include_router(series.router)
+    app.include_router(sicor.router)
     app.include_router(webhook.router)
     app.include_router(dashboard.router)
 

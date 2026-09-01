@@ -20,6 +20,7 @@ import httpx
 import pandas as pd
 
 from bacendata.wrapper import cache, catalogo
+from bacendata.wrapper._runner import run_async
 from bacendata.wrapper.exceptions import (
     BacenAPIError,
     BacenTimeoutError,
@@ -332,19 +333,7 @@ def _run_async(coro):  # type: ignore[no-untyped-def]
 
     Trata o caso de já existir um event loop rodando (ex: Jupyter notebooks).
     """
-    try:
-        loop = asyncio.get_running_loop()
-    except RuntimeError:
-        loop = None
-
-    if loop and loop.is_running():
-        # Dentro de um event loop existente (Jupyter, etc.)
-        import nest_asyncio
-
-        nest_asyncio.apply()
-        return loop.run_until_complete(coro)
-    else:
-        return asyncio.run(coro)
+    return run_async(coro)
 
 
 def get(

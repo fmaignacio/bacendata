@@ -34,6 +34,7 @@ selic_longa = sgs.get(11, start="2000-01-01", end="2024-12-31")
 - **Paginacao automatica** — consultas >10 anos sao divididas em chunks e feitas em paralelo
 - **Multiplas series** — busque varias series de uma vez com `dict`
 - **Catalogo integrado** — use nomes em vez de codigos: `sgs.get("selic")`
+- **Credito rural (SICOR)** — Matriz de Dados do Credito Rural com paginacao automatica
 - **Cache local** — evite chamadas repetidas a API do BACEN
 - **Retry com backoff** — trata automaticamente erros 429, 500 e timeouts
 - **Formato flexivel** — aceita datas ISO (`2024-01-01`), brasileiro (`01/01/2024`) e objetos `date`
@@ -135,6 +136,68 @@ asyncio.run(main())
 
 Qualquer codigo SGS funciona mesmo fora do catalogo: `sgs.get(99999, last=10)`.
 
+## SICOR — Credito Rural
+
+Alem das series temporais do SGS, a biblioteca acessa a Matriz de Dados do
+Credito Rural (SICOR), publicada pelo BACEN na plataforma Olinda.
+
+Diferente do SGS, o SICOR nao e uma serie temporal: sao recursos tabulares
+paginados por *registros* (`$top`/`$skip`), nao por intervalo de datas. A
+paginacao e automatica — o wrapper busca todas as paginas ate esgotar o recurso.
+
+```python
+from bacendata import sicor
+
+# Primeiros 1.000 registros
+df = sicor.get("CusteioMunicipioProduto", limit=1000)
+
+# Filtrando com sintaxe OData
+df = sicor.get("CusteioMunicipioProduto", filtro="AnoEmissao eq 2023")
+
+# Selecionando colunas e ordenando
+df = sicor.get("FonteRecursos", select=["AnoEmissao", "MesEmissao"], orderby="AnoEmissao desc")
+
+# Buscando o recurso inteiro (todas as paginas)
+df = sicor.get("Faixa")
+```
+
+As colunas do DataFrame sao exatamente as retornadas pela API — o wrapper nao
+impoe um schema fixo, entao campos novos publicados pelo BACEN aparecem
+automaticamente. Para inspecionar o schema de um recurso:
+
+```python
+sicor.colunas("CusteioMunicipioProduto")
+# ['AnoEmissao', 'MesEmissao', 'cdMunicipio', ...]
+```
+
+Recursos conhecidos:
+
+```python
+sicor.listar_recursos()
+# {'CusteioMunicipioProduto': 'Quantidade e valor dos contratos de custeio...', ...}
+```
+
+| Recurso | Descricao |
+|---------|-----------|
+| `CusteioMunicipioProduto` | Contratos de custeio por municipio e produto |
+| `CusteioInvestimentoComercialIndustrialSemFiltros` | Contratos por municipio |
+| `FonteRecursos` | Contratos por fonte de recursos |
+| `ProgramaSubprograma` | Contratos por programa e subprograma |
+| `RegiaoUFGenero` | Contratos por regiao, UF e genero |
+| `Faixa` | Contratos por faixa de valores |
+
+A lista acima e uma conveniencia, nao uma restricao: `sicor.get()` aceita
+qualquer recurso publicado pelo BACEN. O catalogo oficial e sempre atualizado
+fica no [navegador de dados do Olinda](https://olinda.bcb.gov.br/olinda/servico/SICOR/versao/v2/aplicacao#!/).
+
+Recursos parametrizados do Olinda usam `params`:
+
+```python
+df = sicor.get("Recurso(AnoInicio=@AnoInicio)", params={"@AnoInicio": "2023"})
+```
+
+Interface async disponivel via `sicor.aget()` e `sicor.acolunas()`.
+
 ## Tratamento de erros
 
 ```python
@@ -153,6 +216,21 @@ except BacenTimeoutError:
     print("API do BACEN nao respondeu")
 except BacenAPIError as e:
     print(f"Erro {e.status_code}: {e.mensagem}")
+```
+
+No SICOR, as excecoes equivalentes sao `RecursoNaoEncontrado` e
+`SicorTimeoutError` (ambas derivam de `BacenDataError`, assim como as do SGS):
+
+```python
+from bacendata import sicor
+from bacendata.wrapper.exceptions import RecursoNaoEncontrado, SicorTimeoutError
+
+try:
+    df = sicor.get("RecursoInexistente", limit=10)
+except RecursoNaoEncontrado:
+    print("Recurso nao existe")
+except SicorTimeoutError:
+    print("API do BACEN nao respondeu")
 ```
 
 ## Desenvolvimento
